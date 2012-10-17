@@ -1,0 +1,23 @@
+<resources>
+
+    <string name="app_name">The Unofficial LTC-GLOBAL App</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="menu_settings">Settings</string>
+    <string name="title_activity_main">The Unofficial LTC-GLOBAL App</string>
+    <string name="main_ticker_name">Ticker</string>
+    <string name="main_btn_lookup">Lookup</string>
+    <string name="main_latest">Latest:</string>
+    <string name="main_bid">Bid:</string>
+    <string name="main_ask">Ask:</string>
+    <string name="main_24h_low">24h Low:</string>
+    <string name="main_24h_high">24h High:</string>
+    <string name="main_24h_avg">24h Avg:</string>
+    <string name="main_24h_vol">24h Vol:</string>
+    <string name="main_7d_avg">7d Avg:</string>
+    <string name="main_7d_vol">7d Vol:</string>
+    <string name="main_total_vol">Total Vol:</string>
+    <string name="main_type">Type:</string>
+    <string name="main_tv_trade_history">Trade History</string>
+    <string name="main_tv_status">Status</string>
+
+</resources>

@@ -1,0 +1,131 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" >
+
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:orientation="vertical" >
+
+            <ScrollView
+                android:id="@+id/scrollView1"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content" >
+
+                <LinearLayout
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    android:orientation="vertical" >
+
+                    		 <com.androidplot.xy.XYPlot
+				            android:id="@+id/mySimpleXYPlot"
+				            android:layout_width="fill_parent"
+				            android:layout_height="200dp"
+				            android:layout_marginTop="10px"
+				            android:layout_marginLeft="10px"
+				            android:layout_marginRight="10px"
+	       				    title="Market History"/><LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_alignParentTop="true" android:orientation="vertical">
+
+
+
+        <TableRow android:id="@+id/tableRow1" android:layout_width="fill_parent" android:layout_height="wrap_content">
+
+            <TextView android:id="@+id/textView1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/main_ticker_name" />
+
+            <EditText android:id="@+id/main_editText_ticker" android:layout_width="wrap_content" android:layout_height="wrap_content" android:ems="10" android:text="LTC-GLOBAL" />
+
+            <Button android:id="@+id/main_btn_lookup" style="?android:attr/buttonStyleSmall" android:layout_width="wrap_content" android:layout_height="fill_parent" android:text="@string/main_btn_lookup" />
+        </TableRow>
+
+        <TableRow android:id="@+id/tableRow6" android:layout_width="fill_parent" android:layout_height="wrap_content">
+
+            <TextView android:id="@+id/textView6" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" android:text="@string/main_tv_status" />
+
+            <TextView android:id="@+id/main_tv_downloading" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+
+        </TableRow>
+
+        <TableLayout android:layout_width="fill_parent" android:layout_height="wrap_content" android:paddingRight="10dp">
+
+            <TableRow android:id="@+id/TableRow02" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="@dimen/padding_small">
+
+                <TextView android:id="@+id/TextView20" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" android:text="@string/main_ask" />
+
+                <TextView android:id="@+id/main_textView_ask" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" android:text="        " />
+
+                <TextView android:id="@+id/TextView18" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" android:text="@string/main_bid" />
+
+                <TextView android:id="@+id/main_textView_bid" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+            </TableRow>
+
+            <TableRow android:id="@+id/TableRow01" android:layout_width="wrap_content" android:layout_height="wrap_content">
+
+                <TextView android:id="@+id/TextView16" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" android:text="@string/main_24h_high" />
+
+                <TextView android:id="@+id/main_textView_24h_high" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" />
+
+                <TextView android:id="@+id/TextView14" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" android:text="@string/main_latest" />
+
+                <TextView android:id="@+id/main_textView_latest" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+            </TableRow>
+
+            <TableRow android:id="@+id/tableRow2" android:layout_width="wrap_content" android:layout_height="wrap_content">
+
+                <TextView android:id="@+id/textView2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" android:text="@string/main_24h_avg" />
+
+                <TextView android:id="@+id/main_textView_24h_avg" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" />
+
+                <TextView android:id="@+id/textView4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" android:text="@string/main_7d_avg" />
+
+                <TextView android:id="@+id/main_textView_7d_avg" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+            </TableRow>
+
+            <TableRow android:id="@+id/tableRow3" android:layout_width="wrap_content" android:layout_height="wrap_content">
+
+                <TextView android:id="@+id/TextView01" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" android:text="@string/main_24h_low" />
+
+                <TextView android:id="@+id/main_textView_24h_low" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" />
+
+                <TextView android:id="@+id/TextView02" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" android:text="@string/main_7d_vol" />
+
+                <TextView android:id="@+id/main_textView_7d_vol" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+            </TableRow>
+
+            <TableRow android:id="@+id/tableRow4" android:layout_width="wrap_content" android:layout_height="wrap_content">
+
+                <TextView android:id="@+id/TextView05" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" android:text="@string/main_type" />
+
+                <TextView android:id="@+id/main_textView_type" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" />
+
+                <TextView android:id="@+id/textView3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" android:text="@string/main_24h_vol" />
+
+                <TextView android:id="@+id/main_textView_24h_vol" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+            </TableRow>
+
+            <TableRow android:id="@+id/tableRow5" android:layout_width="wrap_content" android:layout_height="wrap_content">
+
+                <TextView android:id="@+id/TextView09" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" android:text="@string/main_ticker_name" />
+
+                <TextView android:id="@+id/main_textView_ticker" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" />
+
+                <TextView android:id="@+id/TextView06" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="10dp" android:text="@string/main_total_vol" />
+
+                <TextView android:id="@+id/main_textView_total_vol" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+            </TableRow>
+        </TableLayout>
+
+        <TextView android:id="@+id/textView5" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingTop="20dp" android:text="@string/main_tv_trade_history" />
+
+        <TableLayout android:id="@+id/main_tableLayout_history" android:layout_width="fill_parent" android:layout_height="wrap_content">
+        </TableLayout>
+    </LinearLayout>
+                </LinearLayout>
+	           
+            </ScrollView>
+  
+        
+
+    
+ </LinearLayout>
+</RelativeLayout>
