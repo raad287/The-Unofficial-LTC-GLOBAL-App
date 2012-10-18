@@ -11,6 +11,9 @@ import com.androidplot.xy.*;
 import java.text.*;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.Set;
+
 import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.series.XYSeries;
 import com.androidplot.xy.*;
@@ -155,8 +158,8 @@ public class MainActivity extends Activity {
         mySimpleXYPlot.setRangeLabel("Price/LTC");
         
         // get rid of decimal points
-        mySimpleXYPlot.setRangeValueFormat(new DecimalFormat("0"));
-        mySimpleXYPlot.setRangeStep(XYStepMode.SUBDIVIDE, 10);
+        mySimpleXYPlot.setRangeValueFormat(new DecimalFormat("0.0"));
+        mySimpleXYPlot.setRangeStep(XYStepMode.INCREMENT_BY_PIXELS, 10);
         mySimpleXYPlot.setDomainValueFormat(new Format() {
 
         	// create a simple date format that draws on the year portion of our timestamp.
@@ -193,7 +196,13 @@ public class MainActivity extends Activity {
 		XYPlot mySimpleXYPlot;
 		 // initialize our XYPlot reference:
         mySimpleXYPlot = (XYPlot) findViewById(R.id.mySimpleXYPlot);
- 
+        Iterator series_iterator=mySimpleXYPlot.getSeriesSet().iterator();
+        
+        // clear out the previous series
+        while(series_iterator.hasNext())
+        {
+        	mySimpleXYPlot.removeSeries((XYSeries)series_iterator.next());
+        }
         
      		Log.i("LG", "Get Ids");
      		JSONArray jIds = jHistory.names();
@@ -259,6 +268,9 @@ public class MainActivity extends Activity {
         mySimpleXYPlot.addSeries(series2,
                 new LineAndPointFormatter(Color.rgb(0, 0, 200), Color.rgb(0, 0, 100), null));
  
+        
+     
+        mySimpleXYPlot.redraw();
         mySimpleXYPlot.invalidate();
 	}
 

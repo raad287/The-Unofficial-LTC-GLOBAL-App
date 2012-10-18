@@ -19,5 +19,8 @@
     <string name="main_type">Type:</string>
     <string name="main_tv_trade_history">Trade History</string>
     <string name="main_tv_status">Status</string>
+    <string name="LTC_GLOBAL">\"LTC-GLOBAL\"</string>
+    <string name="btn_browse">Browse</string>
+    <string name="btn_details">Details</string>
 
 </resources>
