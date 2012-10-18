@@ -93,7 +93,9 @@ public class MainActivity extends Activity {
 	        	jTrade.remove("timestamp");		// remove
 				jHistory.put(timestamp, jTrade);	// use timestamp as trade id in jHistory
 				
-			} catch (JSONException e) { 	Log.i("LG", "JSONException:"+e.getMessage()); 	}
+			} catch (JSONException e) { 	
+				Log.i("LG", "JSONException:"+e.getMessage()); 
+				return null;}
 	    }
 		
 		return jHistory;
@@ -109,7 +111,7 @@ public class MainActivity extends Activity {
 			
 		} catch (JSONException e) {
 			Log.i("LG", "JSONException:"+e.getMessage());
-			jTicker.toString();
+			return null;
 		}
 		
 		return jTicker;
@@ -206,6 +208,10 @@ public class MainActivity extends Activity {
         
      		Log.i("LG", "Get Ids");
      		JSONArray jIds = jHistory.names();
+     		if(jIds==null)
+     		{
+     			return;
+     		}
      		int num_trades=jHistory.names().length();
      		long[] sorted_ids= new long[num_trades];
      		for (int i=0; i<num_trades; i++)
@@ -279,11 +285,21 @@ public class MainActivity extends Activity {
 	// fillTable: fill trade history table main UI
 	public void fillTable(JSONObject jHistory, boolean desc)
 	{
+		// do nothing if the history is null
+		if(jHistory==null)
+		{
+			return;
+		}
+		
 		// Get ids
 		Log.i("LG", "Get Ids");
 		JSONArray jIds = new JSONArray();
 		jIds = jHistory.names();
-		int num_trades=jHistory.names().length();
+		if(jIds==null)
+		{
+			return;
+		}
+		int num_trades=jIds.length();
 		long[] sorted_ids= new long[num_trades];
 		for (int i=0; i<num_trades; i++)
 		{
@@ -385,7 +401,8 @@ public class MainActivity extends Activity {
 			}
 			
 			// Check for errors
-			if(sb.toString().contains("only please")) // error
+			if(sb.toString().contains("only please") || sb.toString().startsWith("0")
+				|| sb.toString().contains("Error")) // error
 			{
 				return null;
 			}
@@ -453,9 +470,10 @@ public class MainActivity extends Activity {
 			} catch (Exception e) { Log.i("LG", "Exception:"+e.getMessage()); }
 			
 			// Check for errors
-			if(sb.toString().contains("only please")) // error
+			if(sb.toString().contains("only please") || sb.toString().startsWith("0")
+				|| sb.toString().contains("Error")) // error
 			{
-				return null;
+					return null;
 			}
 			
 		 	return parseTickersJSON(sb.toString());
