@@ -7,6 +7,7 @@ import com.androidplot.Plot;
 import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.series.XYSeries;
 import com.androidplot.xy.*;
+
  
 import java.text.*;
 import java.util.Arrays;
@@ -47,6 +48,7 @@ import org.json.JSONObject;
 
 
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 
 import android.app.Activity;
@@ -199,7 +201,9 @@ public class MainActivity extends Activity {
 		 // initialize our XYPlot reference:
         mySimpleXYPlot = (XYPlot) findViewById(R.id.mySimpleXYPlot);
         Iterator series_iterator=mySimpleXYPlot.getSeriesSet().iterator();
+      
         
+   
         // clear out the previous series
         while(series_iterator.hasNext())
         {
@@ -249,18 +253,11 @@ public class MainActivity extends Activity {
      	
         
         // create our series from our array of nums:
-        XYSeries series2 = new SimpleXYSeries(
+        XYSeries series = new SimpleXYSeries(
                 Arrays.asList(timestamps),
                 Arrays.asList(amount),
                 "Price");
- 
-        /*
-        // Turn the above arrays into XYSeries':
-        XYSeries series1 = new SimpleXYSeries(
-                Arrays.asList(series1Numbers),          // SimpleXYSeries takes a List so turn our array into a List
-                SimpleXYSeries.ArrayFormat.Y_VALS_ONLY, // Y_VALS_ONLY means use the element index as the x value
-                "Series1");                             // Set the display title of the series
- 		*/
+
         
  
         // Create a formatter to use for drawing a series using LineAndPointRenderer:
@@ -271,13 +268,12 @@ public class MainActivity extends Activity {
  
  
         // same as above:
-        mySimpleXYPlot.addSeries(series2,
-                new LineAndPointFormatter(Color.rgb(0, 0, 200), Color.rgb(0, 0, 100), null));
+        mySimpleXYPlot.addSeries(series,series1Format);
  
         
      
         mySimpleXYPlot.redraw();
-        mySimpleXYPlot.invalidate();
+        //mySimpleXYPlot.invalidate();
 	}
 
 	
@@ -369,6 +365,51 @@ public class MainActivity extends Activity {
 			tl_trade_history.addView(tr_trade);
 		}
 	}
+	
+	public class DownloadNames extends AsyncTask<String, Integer, JSONObject> 
+	{
+		
+
+		@Override
+		protected void onPreExecute() {
+			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
+			tv.setText("Downloading Ticker...");
+			tv.invalidate();
+			super.onPreExecute();
+		}
+
+		@Override
+		// doInBackground: take string array containing ticker names and download
+		protected JSONObject doInBackground(String... tickers) {
+			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download names");
+			
+			HttpClient http_client = new DefaultHttpClient();   
+			StringBuilder sb = new StringBuilder();
+			HttpGet http_get = new HttpGet(tickers[0]);
+			
+			try {
+				HttpResponse http_response=http_client.execute(http_get);
+				sb.append(EntityUtils.toString(http_response.getEntity()));
+			} catch (Exception e) { Log.i("LG", "Exception:"+e.getMessage()); }
+			
+			// Check for errors
+			if(sb.toString().contains("only please") || sb.toString().startsWith("0")
+				|| sb.toString().contains("Error")) // error
+			{
+					return null;
+			}
+			
+		 	return parseTickersJSON(sb.toString());
+		}
+
+		@Override
+		protected void onPostExecute(JSONObject jTicker) {
+			
+			super.onPostExecute(jTicker);
+			
+		}
+		
+	}
 
 	public class DownloadHistory extends AsyncTask<String, Integer, JSONObject> 
 	{
@@ -443,6 +484,9 @@ public class MainActivity extends Activity {
 		
 	}
 	
+	
+	
+	
 	public class DownloadTicker extends AsyncTask<String, Integer, JSONObject> 
 	{
 		
@@ -505,7 +549,7 @@ public class MainActivity extends Activity {
   
         initChart();
         
-        // Setup buttons
+        // Lookup Button
         Button btn_lookup = (Button) findViewById(R.id.main_btn_lookup);
      	btn_lookup.setOnClickListener( new Button.OnClickListener() {
 				@Override
@@ -517,6 +561,16 @@ public class MainActivity extends Activity {
      					new DownloadTicker().execute(URL_API_TICKER+et_ticker.getText().toString());
      				}
 					
+				}
+     		});
+     	
+     	//Browse Button
+     	Button btn_browse = (Button) findViewById(R.id.main_btn_browse);
+     	btn_browse.setOnClickListener( new Button.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+     					new DownloadTicker().execute(URL_API_TICKER);
+     					
 				}
      		});
 		

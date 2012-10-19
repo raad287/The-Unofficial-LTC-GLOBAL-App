@@ -4,6 +4,7 @@
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
-	<classpathentry kind="lib" path="libs/Androidplot-core-0.5.0-release.jar"/>
+	<classpathentry kind="lib" path="/home/na/Dropbox/Documents/Android/The Unofficial LTC-GLOBAL App/libs/Androidplot-core-0.5.0-release.jar"/>
+	<classpathentry kind="lib" path="/home/na/Dropbox/Documents/Android/The Unofficial LTC-GLOBAL App/libs/android-support-v4.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
