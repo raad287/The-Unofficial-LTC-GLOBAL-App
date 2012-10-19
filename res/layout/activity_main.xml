@@ -27,21 +27,22 @@
 				            android:layout_marginRight="10px"
 	       				    title="Market History"/><LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_alignParentTop="true" android:orientation="vertical">
 
-	       				        <TableRow
-	       				            android:id="@+id/main_tr_edit"
-	       				            android:layout_width="fill_parent"
+	       				        <RelativeLayout
+	       				            android:layout_width="match_parent"
 	       				            android:layout_height="wrap_content" >
 
 	       				            <Button
 	       				                android:id="@+id/main_btn_browse"
 	       				                android:layout_width="wrap_content"
 	       				                android:layout_height="wrap_content"
+	       				                android:layout_alignParentLeft="true"
 	       				                android:text="Browse" />
 
 	       				            <EditText
 	       				                android:id="@+id/main_editText_ticker"
-	       				                android:layout_width="wrap_content"
+	       				                android:layout_width="150dp"
 	       				                android:layout_height="wrap_content"
+	       				                android:layout_centerInParent="true"
 	       				                android:ems="10"
 	       				                android:text="LTC-GLOBAL" >
 
@@ -50,12 +51,12 @@
 
 	       				            <Button
 	       				                android:id="@+id/main_btn_lookup"
-	       				                style="?android:attr/buttonStyleSmall"
 	       				                android:layout_width="wrap_content"
-	       				                android:layout_height="fill_parent"
+	       				                android:layout_height="wrap_content"
+	       				                android:layout_alignParentRight="true"
 	       				                android:text="@string/main_btn_lookup" />
 
-	       				        </TableRow>
+	       				        </RelativeLayout>
 
         <TableRow
             android:id="@+id/main_tr_buttons"

@@ -29,7 +29,8 @@ public final class R {
         public static final int TextView16=0x7f080012;
         public static final int TextView18=0x7f08000f;
         public static final int TextView20=0x7f08000d;
-        public static final int browse_listView_tickers=0x7f080000;
+        public static final int browse_linearLayout=0x7f080000;
+        public static final int browse_listView_tickers=0x7f080001;
         public static final int main_btn_browse=0x7f080004;
         public static final int main_btn_lookup=0x7f080006;
         public static final int main_editText_ticker=0x7f080005;
@@ -47,13 +48,12 @@ public final class R {
         public static final int main_textView_total_vol=0x7f080029;
         public static final int main_textView_type=0x7f080022;
         public static final int main_tr_buttons=0x7f080007;
-        public static final int main_tr_edit=0x7f080003;
         public static final int main_tr_status=0x7f080008;
         public static final int main_tr_ticker=0x7f08000b;
         public static final int main_tv_downloading=0x7f08000a;
         public static final int menu_settings=0x7f08002c;
-        public static final int mySimpleXYPlot=0x7f080002;
-        public static final int scrollView1=0x7f080001;
+        public static final int mySimpleXYPlot=0x7f080003;
+        public static final int scrollView1=0x7f080002;
         public static final int tableRow2=0x7f080016;
         public static final int tableRow3=0x7f08001b;
         public static final int tableRow4=0x7f080020;

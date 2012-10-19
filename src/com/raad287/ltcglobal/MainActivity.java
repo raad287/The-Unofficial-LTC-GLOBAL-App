@@ -22,6 +22,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -103,7 +104,7 @@ public class MainActivity extends Activity {
 		return jHistory;
 	}
 	
-	// take unsorted ticker string, return JSONObject sorted using ticker value as ID
+	// take unsorted ticker string, return JSONObject
 	public JSONObject parseTickersJSON(String sTickers)
 	{
 
@@ -366,50 +367,6 @@ public class MainActivity extends Activity {
 		}
 	}
 	
-	public class DownloadNames extends AsyncTask<String, Integer, JSONObject> 
-	{
-		
-
-		@Override
-		protected void onPreExecute() {
-			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
-			tv.setText("Downloading Ticker...");
-			tv.invalidate();
-			super.onPreExecute();
-		}
-
-		@Override
-		// doInBackground: take string array containing ticker names and download
-		protected JSONObject doInBackground(String... tickers) {
-			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download names");
-			
-			HttpClient http_client = new DefaultHttpClient();   
-			StringBuilder sb = new StringBuilder();
-			HttpGet http_get = new HttpGet(tickers[0]);
-			
-			try {
-				HttpResponse http_response=http_client.execute(http_get);
-				sb.append(EntityUtils.toString(http_response.getEntity()));
-			} catch (Exception e) { Log.i("LG", "Exception:"+e.getMessage()); }
-			
-			// Check for errors
-			if(sb.toString().contains("only please") || sb.toString().startsWith("0")
-				|| sb.toString().contains("Error")) // error
-			{
-					return null;
-			}
-			
-		 	return parseTickersJSON(sb.toString());
-		}
-
-		@Override
-		protected void onPostExecute(JSONObject jTicker) {
-			
-			super.onPostExecute(jTicker);
-			
-		}
-		
-	}
 
 	public class DownloadHistory extends AsyncTask<String, Integer, JSONObject> 
 	{
@@ -569,7 +526,8 @@ public class MainActivity extends Activity {
      	btn_browse.setOnClickListener( new Button.OnClickListener() {
 				@Override
 				public void onClick(View v) {
-     					new DownloadTicker().execute(URL_API_TICKER);
+     					Intent intent = new Intent(getApplicationContext(), BrowseActivity.class);
+     					startActivityForResult(intent,1);
      					
 				}
      		});
@@ -581,7 +539,29 @@ public class MainActivity extends Activity {
         getMenuInflater().inflate(R.menu.activity_main, menu);
         return true;
     }
-}
+    
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+    	if (requestCode == 1) {
+
+    	     if(resultCode == RESULT_OK){
+
+    	      String result=data.getStringExtra("result");
+    	     EditText et = (EditText) findViewById(R.id.main_editText_ticker);
+    	     et.setText(result);
+    	      
+
+    	}
+
+    	if (resultCode == RESULT_CANCELED) {
+
+    	     //Write your code on no result return 
+
+    	}
+    	}//onAcrivityResult
+
+    }
+ }
 
 
 
