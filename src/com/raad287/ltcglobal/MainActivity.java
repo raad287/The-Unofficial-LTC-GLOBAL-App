@@ -163,7 +163,7 @@ public class MainActivity extends Activity {
         mySimpleXYPlot.setRangeLabel("Price/LTC");
         
         // get rid of decimal points
-        mySimpleXYPlot.setRangeValueFormat(new DecimalFormat("0.0"));
+        mySimpleXYPlot.setRangeValueFormat(new DecimalFormat("0.00"));
         mySimpleXYPlot.setRangeStep(XYStepMode.INCREMENT_BY_PIXELS, 10);
         mySimpleXYPlot.setDomainValueFormat(new Format() {
 
@@ -244,7 +244,7 @@ public class MainActivity extends Activity {
      			try {
 					JSONObject jTrade = jHistory.getJSONObject(Long.toString(sorted_ids[i]));
 					timestamps[i] = sorted_ids[i];
-					amount[i] = jTrade.getLong("amount");
+					amount[i] = jTrade.getDouble("amount");
 					quantity[i] = jTrade.getLong("quantity");
 					
 				} catch (JSONException e) {
@@ -555,8 +555,9 @@ public class MainActivity extends Activity {
 
     	if (resultCode == RESULT_CANCELED) {
 
-    	     //Write your code on no result return 
-
+    	     TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
+    	     tv.setText("Unable to download all ticker data");
+    	     tv.invalidate();
     	}
     	}//onAcrivityResult
 

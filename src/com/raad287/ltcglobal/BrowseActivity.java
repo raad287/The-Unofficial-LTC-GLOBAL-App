@@ -102,19 +102,22 @@ public class BrowseActivity extends Activity {
 	}
 	
 	public void populateList(JSONObject jTickers)
-	{
-		//try {
-			
-		
+	{	
 		String[] items;
-		
 		items = new String[jTickers.names().length()];
 		for(int i=0; i<jTickers.names().length(); i++)
 		{
 			try {
 				items[i]=jTickers.names().getString(i);
 				Log.i("LG", "Item"+items[i]);
-			} catch (JSONException e) { Log.i("LG", "JSONException:"+e.getMessage()); }
+			} catch (JSONException e) { 
+				// if populateList fails finish the activity
+				Log.i("LG", "JSONException:"+e.getMessage()); 
+				Intent returnIntent = new Intent();
+		    	 setResult(RESULT_CANCELED,returnIntent);     
+		    	 finish();
+				
+				}
 		}
 		Arrays.sort(items);
 		Log.i("LG", "Items:"+items.toString());
@@ -123,8 +126,7 @@ public class BrowseActivity extends Activity {
 		ListView lv_tickers = (ListView) this.findViewById(R.id.browse_listView_tickers);
 		lv_tickers.setAdapter(adapter);
 		lv_tickers.invalidate();
-		//}
-		//catch (NullPointerException e) { Log.i("LG", e.getMessage()); }
+
 
 	}
 	
@@ -138,20 +140,15 @@ public class BrowseActivity extends Activity {
 		lv_browse.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 		    @Override
 		    public void onItemClick(AdapterView<?> arg0, View view, int arg2,long itemID) {
-		    	int position = (int) arg0.getSelectedItemId();
-		    	 String item = ((TextView)view).getText().toString();
 		    	
+		    	//return what the user selected to the calling activity
+		    	 String item = ((TextView)view).getText().toString();
 		    	 Intent returnIntent = new Intent();
 		    	 returnIntent.putExtra("result",item);
 		    	 setResult(RESULT_OK,returnIntent);     
 		    	 finish();
 
-		       
 		    }
 		});
-
-
-		
 	}
-
 }
