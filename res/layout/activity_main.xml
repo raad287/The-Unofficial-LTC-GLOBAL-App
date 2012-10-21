@@ -58,12 +58,17 @@
 
 	       				        </RelativeLayout>
 
-        <TableRow
-            android:id="@+id/main_tr_buttons"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content" >
+	       				        <RelativeLayout
+	       				            android:layout_width="match_parent"
+	       				            android:layout_height="wrap_content" >
 
-        </TableRow>
+	       				            <Spinner
+	       				                android:id="@+id/main_spinner_selector"
+	       				                android:layout_width="wrap_content"
+	       				                android:layout_height="wrap_content"
+	       				                android:layout_centerHorizontal="true" />
+
+	       				        </RelativeLayout>
 
         <TableRow
             android:id="@+id/main_tr_status"
@@ -80,6 +85,7 @@
             android:id="@+id/main_tr_ticker"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
+            android:paddingBottom="20dp"
             android:paddingRight="10dp" >
 
             <TableRow android:id="@+id/TableRow02" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingRight="@dimen/padding_small">
@@ -149,9 +155,11 @@
             </TableRow>
         </TableLayout>
 
-        <TextView android:id="@+id/textView5" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingTop="20dp" android:text="@string/main_tv_trade_history" />
+        <TableLayout
+            android:id="@+id/main_tableLayout_data"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content" >
 
-        <TableLayout android:id="@+id/main_tableLayout_history" android:layout_width="fill_parent" android:layout_height="wrap_content">
         </TableLayout>
     </LinearLayout>
                 </LinearLayout>
