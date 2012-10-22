@@ -374,14 +374,33 @@ public class MainActivity extends Activity {
 		try {	jContract.put("financial management", parse);
 		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
 		
-		
-		
-		
-		
+	 
+		//Filter out \r and \n from  strings in jContract
+		for(int i=0; i<jContract.names().length(); i++)
+		{
+			
+			String line="";
+			try {
+				line = jContract.getString(jContract.names().getString(i));
+			} catch (JSONException e) {
+				Log.i("LG", "JSONException:"+e.getMessage());
+			}
+				StringBuffer escapedBuffer = new StringBuffer();
+				for (int j = 0; j < line.length(); j++) {
+				            if ((line.charAt(j) != '\n') && (line.charAt(j) != '\r') && (line.charAt(j) != '\t')) {
+				                escapedBuffer.append(line.charAt(j));
+				            }
+				}
+			line = escapedBuffer.toString();
+			try {
+				jContract.put(jContract.names().getString(i), line);
+			} catch (JSONException e) {
+				Log.i("LG", "JSONException:"+e.getMessage());
+			}	
+		}
+
 		return jContract;
-		
-		
-		
+	
 	}
 	
 	// take unsorted ticker string, return JSONObject
