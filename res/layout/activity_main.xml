@@ -28,7 +28,7 @@
 	       				    title="Market History"/><LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_alignParentTop="true" android:orientation="vertical">
 
 	       				        <RelativeLayout
-	       				            android:layout_width="match_parent"
+	       				            android:layout_width="fill_parent"
 	       				            android:layout_height="wrap_content" >
 
 	       				            <Button
@@ -59,7 +59,7 @@
 	       				        </RelativeLayout>
 
 	       				        <RelativeLayout
-	       				            android:layout_width="match_parent"
+	       				            android:layout_width="fill_parent"
 	       				            android:layout_height="wrap_content" >
 
 	       				            <Spinner

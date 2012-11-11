@@ -138,7 +138,6 @@ public class BrowseActivity extends Activity {
 		
 		ListView lv_browse = (ListView) findViewById(R.id.browse_listView_tickers);
 		lv_browse.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-		    @Override
 		    public void onItemClick(AdapterView<?> arg0, View view, int arg2,long itemID) {
 		    	
 		    	//return what the user selected to the calling activity

@@ -80,12 +80,12 @@ public class MainActivity extends Activity {
 	
 	final Context context = this;
 	
+	
 	public class SpinnerListener implements OnItemSelectedListener {
 
 		int curScreen;
 		
 
-		@Override
 		public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2,
 				long arg3) {
 			Spinner spn = (Spinner)findViewById(R.id.main_spinner_selector);
@@ -98,7 +98,6 @@ public class MainActivity extends Activity {
 			
 		}
 
-		@Override
 		public void onNothingSelected(AdapterView<?> arg0) {
 			// TODO Auto-generated method stub
 			
@@ -138,269 +137,218 @@ public class MainActivity extends Activity {
 	
 	// parses the security page to fill contract & prospectus, notifications and motions
 	// returns JSON
+	
+	public String stripHTML(String s)
+	{
+		Log.i("LG", "stripHTML");
+		StringBuilder sb = new StringBuilder();
+		String sStart = "<";
+		String sEnd =">";
+		sb.append(s);
+		while(sb.indexOf(sStart)!=-1 && sb.indexOf(sEnd, sb.indexOf(sStart))!=-1)
+		{
+			sb.delete(sb.indexOf(sStart),sb.indexOf(sEnd, sb.indexOf(sStart))+1);
+		}
+		return sb.toString();
+	}
+	
+	public String parseSecurityLookup(String sPage, String key, String start, String end)
+	{
+		// Example key = "Ticker</th>" tag = "<td>"
+		// Find Ticker
+		int id1=0;
+		int id2=0;
+		int id3=0;
+		id1=sPage.indexOf(key);
+		Log.i("LG","id1:"+Integer.toString(id1));
+		id2=sPage.indexOf(start,id1); //start
+		
+		Log.i("LG","id2:"+Integer.toString(id2));
+		id3=sPage.indexOf(end,id2); //end
+		
+		Log.i("LG","id3:"+Integer.toString(id3));
+			
+		char[] buffer=new char[id3-(id2+start.length())];
+				
+		sPage.getChars(id2+start.length(), id3, buffer, 0);
+		String parse = String.copyValueOf(buffer);
+		return parse;
+	}
+	
+	public JSONObject parseNotificationsHTML(String sPage)
+	{
+		Log.i("LG", "parseNotificationHTML");
+		JSONObject jNotifications = new JSONObject();
+		int id_notification_start = sPage.indexOf("<div id=\"tab4\" class=\"tab_content\">");
+		int id_notification_end = sPage.indexOf("<div id=\"tab5\" class=\"tab_content\">");
+		String sNotifications= sPage.substring(id_notification_start, id_notification_end);
+		sNotifications = stripHTML(sNotifications);
+		
+		StringBuffer sb = new StringBuffer();
+
+		//Filter out \r and \t from 
+		for (int j = 0; j < sNotifications.length(); j++) {
+			if ((sNotifications.charAt(j) != '\r') && (sNotifications.charAt(j) != '\t')) {
+			   
+			  // Filter out &xx;	
+				if(j<sNotifications.length()-3) {
+				   if( (sNotifications.charAt(j)!='&') && (sNotifications.charAt(j+3)!=';') )
+				   {
+					   sb.append(sNotifications.charAt(j));
+				   }
+				   else {
+					   // skip over
+					   j=j+3;
+				   } 
+				}else 
+				{ sb.append(sNotifications.charAt(j)); }
+	        }}
+		sNotifications = sb.toString();
+		
+		// Filter out leading newline's and whitespace
+		int marker=0;
+		for (int i=0; i<sNotifications.length(); i++)
+		{
+			if(sNotifications.charAt(i)!=(' ') && sNotifications.charAt(i)!=('\r') 
+					&& sNotifications.charAt(i)!=('\r'))
+			{
+				marker=i;
+				break;
+			}
+		}
+		if(marker>0)   // delete the whitespace if found
+		{
+			StringBuilder sb2 = new StringBuilder(sNotifications);
+			sb2.delete(0, marker);
+			sNotifications=sb2.toString();
+		}
+		
+		
+		Log.i("LG", "Parsed Notifications: "+sNotifications);
+		try {
+			jNotifications.put("string", sNotifications);
+		}catch (JSONException e) { Log.i("LG", e.getMessage()); }
+		
+		return jNotifications;
+	}
+	
+	public JSONObject parseMotionsHTML(String sPage)
+	{
+		Log.i("LG", "parseMotionsHTML");
+		JSONObject jMotions = new JSONObject();
+		int id_notification_start = sPage.indexOf("<div id=\"tab5\" class=\"tab_content\">");
+		int id_notification_end = sPage.indexOf("<!-- GeoTrust QuickSSL [tm] Smart  Icon tag. Do not edit. -->");
+		String sMotions= sPage.substring(id_notification_start, id_notification_end);
+		sMotions = stripHTML(sMotions);
+		
+		StringBuffer sb = new StringBuffer();
+
+		//Filter out \r and \t from 
+		for (int j = 0; j < sMotions.length(); j++) {
+			if ((sMotions.charAt(j) != '\r') && (sMotions.charAt(j) != '\t')) {
+			   
+			  // Filter out &xx;	
+				if(j<sMotions.length()-3) {
+				   if( (sMotions.charAt(j)!='&') && (sMotions.charAt(j+3)!=';') )
+				   {
+					   sb.append(sMotions.charAt(j));
+				   }
+				   else {
+					   // skip over
+					   j=j+3;
+				   } 
+				}else 
+				{ sb.append(sMotions.charAt(j)); }
+	        }}
+		sMotions = sb.toString();
+		
+		// Filter out leading newline's and whitespace
+		int marker=0;
+		for (int i=0; i<sMotions.length(); i++)
+		{
+			if(sMotions.charAt(i)!=(' ') && sMotions.charAt(i)!=('\r') 
+					&& sMotions.charAt(i)!=('\r'))
+			{
+				marker=i;
+				break;
+			}
+		}
+		if(marker>0)   // delete the whitespace if found
+		{
+			StringBuilder sb2 = new StringBuilder(sMotions);
+			sb2.delete(0, marker);
+			sMotions=sb2.toString();
+		}
+		
+		
+		Log.i("LG", "Parsed Notifications: "+sMotions);
+		try {
+			jMotions.put("string", sMotions);
+		}catch (JSONException e) { Log.i("LG", e.getMessage()); }
+		
+		return jMotions;
+	}
+	
 	public JSONObject parseSecurityHTML(String sPage)
 	{
 		// Must do error checking before this point, will crash if bad request
 		
 		JSONObject jContract=new JSONObject();
-		JSONObject jNotifications = new JSONObject();
-		JSONObject jMotions = new JSONObject();
 		
-		
-		// Find Ticker
-		int id1=0;
-		int id2=0;
-		int id3=0;
-		id1=sPage.indexOf("Ticker</th>");
-		Log.i("LG","id1:"+Integer.toString(id1));
-		id2=sPage.indexOf("<td>",id1); //start
-		Log.i("LG","id2:"+Integer.toString(id2));
-		id3=sPage.indexOf("</td>",id2); //end
-		Log.i("LG","id3:"+Integer.toString(id3));
-	
-		char[] buffer=new char[id3-(id2+4)];
-		
-		sPage.getChars(id2+4, id3, buffer, 0);
-		String parse = String.copyValueOf(buffer);
-		try {	jContract.put("ticker", parse);
-		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		
-		// Find Peer Approval
-		Log.i("LG","sPage:"+sPage.toString());
-		id1=sPage.indexOf("Approval</th>");
-		Log.i("LG","id1:"+Integer.toString(id1));
-		id2=sPage.indexOf("<td>",id1); //start
-		Log.i("LG","id2:"+Integer.toString(id2));
-		id3=sPage.indexOf("</td>",id2); //end
-		Log.i("LG","id3:"+Integer.toString(id3));
-	
-		buffer=new char[id3-(id2+4)];
-		
-		sPage.getChars(id2+4, id3, buffer, 0);
-		parse = String.copyValueOf(buffer);
-		try {	jContract.put("peer approval", parse);
-		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		
-		// Find Shares Issued
-		Log.i("LG","sPage:"+sPage.toString());
-		id1=sPage.indexOf("Issued</th>");
-		Log.i("LG","id1:"+Integer.toString(id1));
-		id2=sPage.indexOf("<td>",id1); //start
-		Log.i("LG","id2:"+Integer.toString(id2));
-		id3=sPage.indexOf("</td>",id2); //end
-		Log.i("LG","id3:"+Integer.toString(id3));
-	
-		buffer=new char[id3-(id2+4)];
-		
-		sPage.getChars(id2+4, id3, buffer, 0);
-		parse = String.copyValueOf(buffer);
-		try {	jContract.put("shares issued", parse);
-		} catch (JSONException e) { Log.i("LG", e.getMessage()); }		
-		
-		// Find Shares Outstanding
-		Log.i("LG","sPage:"+sPage.toString());
-		id1=sPage.indexOf("Outstanding</th>");
-		Log.i("LG","id1:"+Integer.toString(id1));
-		id2=sPage.indexOf("<td>",id1); //start
-		Log.i("LG","id2:"+Integer.toString(id2));
-		id3=sPage.indexOf("</td>",id2); //end
-		Log.i("LG","id3:"+Integer.toString(id3));
-	
-		buffer=new char[id3-(id2+4)];
-		
-		sPage.getChars(id2+4, id3, buffer, 0);
-		parse = String.copyValueOf(buffer);
-		try {	jContract.put("shares outstanding", parse);
-		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
+		// Parse Contract
+		try{
+			jContract.put("ticker", parseSecurityLookup(sPage, "Ticker</th>", "<td>", "</td>"));
+			jContract.put("peer approval", parseSecurityLookup(sPage, "Approval</th>", "<td>", "</td>"));
+			jContract.put("shares issued", parseSecurityLookup(sPage, "Issued</th>", "<td>", "</td>"));
+			jContract.put("shares outstanding", parseSecurityLookup(sPage, "Outstanding</th>", "<td>", "</td>"));
+			jContract.put("issuer", parseSecurityLookup(sPage, "Issuer</th>", "<td>", "</td>"));
+			jContract.put("issuer detail", parseSecurityLookup(sPage, "Detail</th>", "<pre>", "</pre>"));
+			jContract.put("contract", parseSecurityLookup(sPage, "Contract</th>", "<pre>", "</pre>"));
+			jContract.put("executive summary", parseSecurityLookup(sPage, "Summary</th>", "<pre>", "</pre>"));
+			jContract.put("business description", parseSecurityLookup(sPage, "Description</th>", "<pre>", "</pre>"));
+			jContract.put("definition of market", parseSecurityLookup(sPage, "Market</th>", "<pre>", "</pre>"));
+			jContract.put("products and services", parseSecurityLookup(sPage, "Services</th>", "<pre>", "</pre>"));
+			jContract.put("organization and management", parseSecurityLookup(sPage, "and Management</th>", "<pre>", "</pre>"));
+			jContract.put("marketing strategy", parseSecurityLookup(sPage, "Strategy</th>", "<pre>", "</pre>"));
+			jContract.put("executive summary", parseSecurityLookup(sPage, "Summary</th>", "<pre>", "</pre>"));
+			jContract.put("financial management", parseSecurityLookup(sPage, "Financial Management</th>", "<pre>", "</pre>"));
+			
+		}catch (JSONException e) { Log.i("LG", e.getMessage()); }
 
-		// Find Issuer
-		Log.i("LG","sPage:"+sPage.toString());
-		id1=sPage.indexOf("Issuer</th>");
-		Log.i("LG","id1:"+Integer.toString(id1));
-		id2=sPage.indexOf("<td>",id1); //start
-		Log.i("LG","id2:"+Integer.toString(id2));
-		id3=sPage.indexOf("</td>",id2); //end
-		Log.i("LG","id3:"+Integer.toString(id3));
-	
-		buffer=new char[id3-(id2+4)];
-		
-		sPage.getChars(id2+4, id3, buffer, 0);
-		parse = String.copyValueOf(buffer);
-		try {	jContract.put("issuer", parse);
-		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		
-		// Find Issuer Detail
-		Log.i("LG","sPage:"+sPage.toString());
-		id1=sPage.indexOf("Detail</th>");
-		Log.i("LG","id1:"+Integer.toString(id1));
-		id2=sPage.indexOf("<pre>",id1); //start
-		Log.i("LG","id2:"+Integer.toString(id2));
-		id3=sPage.indexOf("</pre>",id2); //end
-		Log.i("LG","id3:"+Integer.toString(id3));
-	
-		buffer=new char[id3-(id2+5)];
-		
-		sPage.getChars(id2+5, id3, buffer, 0);
-		parse = String.copyValueOf(buffer);
-		try {	jContract.put("issuer detail", parse);
-		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		
-		// Find Contract
-		Log.i("LG","sPage:"+sPage.toString());
-		id1=sPage.indexOf("Contract</th>");
-		Log.i("LG","id1:"+Integer.toString(id1));
-		id2=sPage.indexOf("<pre>",id1); //start
-		Log.i("LG","id2:"+Integer.toString(id2));
-		id3=sPage.indexOf("</pre>",id2); //end
-		Log.i("LG","id3:"+Integer.toString(id3));
-	
-		buffer=new char[id3-(id2+5)];
-		
-		sPage.getChars(id2+5, id3, buffer, 0);
-		parse = String.copyValueOf(buffer);
-		try {	jContract.put("contract", parse);
-		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		
-		
-		// Find Executive Summary
-		Log.i("LG","sPage:"+sPage.toString());
-		id1=sPage.indexOf("Summary</th>");
-		Log.i("LG","id1:"+Integer.toString(id1));
-		id2=sPage.indexOf("<pre>",id1); //start
-		Log.i("LG","id2:"+Integer.toString(id2));
-		id3=sPage.indexOf("</pre>",id2); //end
-		Log.i("LG","id3:"+Integer.toString(id3));
-	
-		buffer=new char[id3-(id2+5)];
-		
-		sPage.getChars(id2+5, id3, buffer, 0);
-		parse = String.copyValueOf(buffer);
-		try {	jContract.put("executive summary", parse);
-		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		
-		// Find Business Description
-		Log.i("LG","sPage:"+sPage.toString());
-		id1=sPage.indexOf("Description</th>");
-		Log.i("LG","id1:"+Integer.toString(id1));
-		id2=sPage.indexOf("<pre>",id1); //start
-		Log.i("LG","id2:"+Integer.toString(id2));
-		id3=sPage.indexOf("</pre>",id2); //end
-		Log.i("LG","id3:"+Integer.toString(id3));
-	
-		buffer=new char[id3-(id2+5)];
-		
-		sPage.getChars(id2+5, id3, buffer, 0);
-		parse = String.copyValueOf(buffer);
-		try {	jContract.put("business description", parse);
-		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		
-		// Find Definition of the Market
-		Log.i("LG","sPage:"+sPage.toString());
-		id1=sPage.indexOf("Market</th>");
-		Log.i("LG","id1:"+Integer.toString(id1));
-		id2=sPage.indexOf("<pre>",id1); //start
-		Log.i("LG","id2:"+Integer.toString(id2));
-		id3=sPage.indexOf("</pre>",id2); //end
-		Log.i("LG","id3:"+Integer.toString(id3));
-	
-		buffer=new char[id3-(id2+5)];
-		
-		sPage.getChars(id2+5, id3, buffer, 0);
-		parse = String.copyValueOf(buffer);
-		try {	jContract.put("definition of market", parse);
-		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		
-		// Find Products and Services
-		Log.i("LG","sPage:"+sPage.toString());
-		id1=sPage.indexOf("Services</th>");
-		Log.i("LG","id1:"+Integer.toString(id1));
-		id2=sPage.indexOf("<pre>",id1); //start
-		Log.i("LG","id2:"+Integer.toString(id2));
-		id3=sPage.indexOf("</pre>",id2); //end
-		Log.i("LG","id3:"+Integer.toString(id3));
-	
-		buffer=new char[id3-(id2+5)];
-		
-		sPage.getChars(id2+5, id3, buffer, 0);
-		parse = String.copyValueOf(buffer);
-		try {	jContract.put("products and services", parse);
-		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		
-		// Find Organization and Management
-		Log.i("LG","sPage:"+sPage.toString());
-		id1=sPage.indexOf("and Management</th>");
-		Log.i("LG","id1:"+Integer.toString(id1));
-		id2=sPage.indexOf("<pre>",id1); //start
-		Log.i("LG","id2:"+Integer.toString(id2));
-		id3=sPage.indexOf("</pre>",id2); //end
-		Log.i("LG","id3:"+Integer.toString(id3));
-	
-		buffer=new char[id3-(id2+5)];
-		
-		sPage.getChars(id2+5, id3, buffer, 0);
-		parse = String.copyValueOf(buffer);
-		try {	jContract.put("organization and management", parse);
-		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		
-		// Find Market Strategy
-		Log.i("LG","sPage:"+sPage.toString());
-		id1=sPage.indexOf("Strategy</th>");
-		Log.i("LG","id1:"+Integer.toString(id1));
-		id2=sPage.indexOf("<pre>",id1); //start
-		Log.i("LG","id2:"+Integer.toString(id2));
-		id3=sPage.indexOf("</pre>",id2); //end
-		Log.i("LG","id3:"+Integer.toString(id3));
-	
-		buffer=new char[id3-(id2+5)];
-		
-		sPage.getChars(id2+5, id3, buffer, 0);
-		parse = String.copyValueOf(buffer);
-		try {	jContract.put("marketing strategy", parse);
-		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		
-		// Find Financial Management
-		Log.i("LG","sPage:"+sPage.toString());
-		id1=sPage.indexOf("Strategy</th>");
-		Log.i("LG","id1:"+Integer.toString(id1));
-		id2=sPage.indexOf("<pre>",id1); //start
-		Log.i("LG","id2:"+Integer.toString(id2));
-		id3=sPage.indexOf("</pre>",id2); //end
-		Log.i("LG","id3:"+Integer.toString(id3));
-	
-		buffer=new char[id3-(id2+5)];
-		
-		sPage.getChars(id2+5, id3, buffer, 0);
-		parse = String.copyValueOf(buffer);
-		try {	jContract.put("financial management", parse);
-		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		
-	 
-		//Filter out \r and \n from  strings in jContract
+		//Filter
 		for(int i=0; i<jContract.names().length(); i++)
 		{
 			
 			String line="";
 			try {
 				line = jContract.getString(jContract.names().getString(i));
-			} catch (JSONException e) {
-				Log.i("LG", "JSONException:"+e.getMessage());
-			}
-				StringBuffer escapedBuffer = new StringBuffer();
-				for (int j = 0; j < line.length(); j++) {
-				            if ((line.charAt(j) != '\n') && (line.charAt(j) != '\r') && (line.charAt(j) != '\t')) {
-				                escapedBuffer.append(line.charAt(j));
-				            }
-				}
-			line = escapedBuffer.toString();
+			} catch (JSONException e) { Log.i("LG", "JSONException:"+e.getMessage()); }
+			
+			StringBuffer sb = new StringBuffer();
+			//Filter out \r and \t from  strings in jContract
+			for (int j = 0; j < line.length(); j++) {
+				if ((line.charAt(j) != '\r') && (line.charAt(j) != '\t')) {
+				   
+				  // Filter out &xx;	
+					if(j<line.length()-3) {
+					   if( (line.charAt(j)!='&') && (line.charAt(j+3)!=';') )
+					   {
+						   sb.append(line.charAt(j));
+					   }
+					   else {
+						   // skip over
+						   j=j+3;
+					   } }
+					else { sb.append(line.charAt(j)); }
+		        }}
+			line = sb.toString();
+
 			try {
 				jContract.put(jContract.names().getString(i), line);
 			} catch (JSONException e) {
-				Log.i("LG", "JSONException:"+e.getMessage());
-			}	
-		}
-
+				Log.i("LG", "JSONException:"+e.getMessage()); }	 }
+		
 		return jContract;
-	
 	}
 	
 	// take unsorted ticker string, return JSONObject
@@ -500,7 +448,7 @@ public class MainActivity extends Activity {
 		XYPlot mySimpleXYPlot;
 		 // initialize our XYPlot reference:
         mySimpleXYPlot = (XYPlot) findViewById(R.id.mySimpleXYPlot);
-        Iterator series_iterator=mySimpleXYPlot.getSeriesSet().iterator();
+        Iterator<XYSeries> series_iterator=mySimpleXYPlot.getSeriesSet().iterator();
       
         
    
@@ -569,7 +517,10 @@ public class MainActivity extends Activity {
  
         // same as above:
         mySimpleXYPlot.addSeries(series,series1Format);
- 
+        try {
+			mySimpleXYPlot.setTitle(jHistory.getString("ticker_name"));
+		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
+		
         
      
         mySimpleXYPlot.redraw();
@@ -669,6 +620,23 @@ public class MainActivity extends Activity {
 			tr_trade.addView(tv_quantity);
 			tl_trade_history.addView(tr_trade);
 		}
+	}
+	
+	// Fill tl_data with notification query
+	public void fillNotifications(JSONObject jNotifications, String sTitle)
+	{
+		//Log.i("LG", "JNotifications:"+jNotifications.toString());
+		TableLayout tl_data = (TableLayout) findViewById(R.id.main_tableLayout_data);
+		tl_data.removeAllViews();
+		TextView tv_title = new TextView(this);
+		tv_title.setText(sTitle);
+		tl_data.addView(tv_title);
+		TextView tv_notifications = new TextView(this);
+		try {
+			tv_notifications.setText(jNotifications.getString("string"));
+		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
+		tl_data.addView(tv_notifications);
+		tl_data.invalidate();
 	}
 	
 	public void fillContract(JSONObject jContract)
@@ -837,14 +805,16 @@ public class MainActivity extends Activity {
 	
 	public void Query(String type, String ticker)
 	{
+		Log.i("LG", "Query: Type:"+type+" for "+ticker);
 		if (type.equals("Trade History"))
 		{
-			new DownloadTicker().execute(URL_API_TICKER+ticker);
-			new DownloadHistory().execute(URL_API_HISTORY+ticker);
+			new DownloadTicker().execute(ticker);
+			new DownloadHistory().execute(ticker);
 		}
-		else if(type.equals("Orders"))
+		else if(type.equals("Motions"))
 		{
-			
+			new DownloadTicker().execute(ticker);
+			new DownloadMotions().execute(ticker);
 		}
 		else if(type.equals("Dividends"))
 		{
@@ -852,8 +822,13 @@ public class MainActivity extends Activity {
 		}
 		else if(type.equals("Contract & Prospectus"))
 		{
-			new DownloadTicker().execute(URL_API_TICKER+ticker);
+			new DownloadTicker().execute(ticker);
 			new DownloadSecurity().execute(ticker);
+		}
+		else if(type.equals("Notifications"))
+		{
+			new DownloadTicker().execute(ticker);
+			new DownloadNotifications().execute(ticker);
 		}
 	}
 
@@ -876,7 +851,7 @@ public class MainActivity extends Activity {
 			
 			HttpClient http_client = new DefaultHttpClient();   
 			StringBuilder sb = new StringBuilder();
-			HttpGet http_get = new HttpGet(tickers[0]);
+			HttpGet http_get = new HttpGet(URL_API_HISTORY+tickers[0]);
 			
 			try {
 				HttpResponse http_response=http_client.execute(http_get);
@@ -898,7 +873,12 @@ public class MainActivity extends Activity {
 			sb.deleteCharAt(0);		// delete leading '['
 			sb.deleteCharAt(sb.length()-1); // delete trailing ']'
 			
-		 	return parseHistoryRE(sb.toString());
+			// parse history into json object
+			JSONObject jHistory = parseHistoryRE(sb.toString());
+			try {
+				jHistory.put("ticker_name", tickers[0]);
+			} catch (JSONException e) { Log.i("LG", e.getMessage()); }
+		 	return jHistory;
 		}
 
 		@Override
@@ -906,9 +886,10 @@ public class MainActivity extends Activity {
 			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
 			if(jHistory !=null)
 			{
-			fillTable(jHistory,true);
-			fillChart(jHistory,true);
-			tv.setText("Success");
+				fillChart(jHistory,true);
+				jHistory.remove("ticker_name");
+				fillTable(jHistory,true);
+				tv.setText("Success");
 			}
 			else
 			{
@@ -952,7 +933,7 @@ public class MainActivity extends Activity {
 			
 			HttpClient http_client = new DefaultHttpClient();   
 			StringBuilder sb = new StringBuilder();
-			HttpGet http_get = new HttpGet(tickers[0]);
+			HttpGet http_get = new HttpGet(URL_API_TICKER+tickers[0]);
 			
 			try {
 				HttpResponse http_response=http_client.execute(http_get);
@@ -988,8 +969,6 @@ public class MainActivity extends Activity {
 	
 	public class DownloadSecurity extends AsyncTask<String, Integer, JSONObject> 
 	{
-		
-
 		@Override
 		protected void onPreExecute() {
 			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
@@ -1030,16 +1009,116 @@ public class MainActivity extends Activity {
 			if(jContract!=null) { 
 				fillContract(jContract);	 
 				tv.setText("Success");
-				
-				
 			}
 			else { tv.setText("HTMLParse failed"); }
 			tv.invalidate();
 					
 			super.onPostExecute(jContract);
-			
 		}
-		
+	}
+	
+	public class DownloadNotifications extends AsyncTask<String, Integer, JSONObject> 
+	{
+		@Override
+		protected void onPreExecute() {
+			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
+			tv.setText("Downloading Notifications...");
+			tv.invalidate();
+			super.onPreExecute();
+		}
+
+		@Override
+		// doInBackground: take string array containing ticker names and download
+		protected JSONObject doInBackground(String... tickers) {
+			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download trades");
+			
+			HttpClient http_client = new DefaultHttpClient();   
+			StringBuilder sb = new StringBuilder();
+			HttpGet http_get = new HttpGet(URL_API_SECURITY+tickers[0]);
+			
+			try {
+				HttpResponse http_response=http_client.execute(http_get);
+				sb.append(EntityUtils.toString(http_response.getEntity()));
+			} catch (Exception e) { Log.i("LG", "Exception:"+e.getMessage()); }
+			
+			// Check for errors
+			if(sb.toString().contains("only please") || sb.toString().startsWith("0")
+				|| sb.toString().contains("Error")) // error
+			{
+					return null;
+			}
+
+			//return sb.toString();
+			return parseNotificationsHTML(sb.toString());
+		}
+
+		@Override
+		protected void onPostExecute(JSONObject jPage) {
+			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
+			Log.i("LG", "Notification download postExecute");
+			
+			//JSONObject jNotifications = parseNotificationsHTML(sPage);
+			if(jPage!=null) { 
+				fillNotifications(jPage, "Notifications");	 
+				tv.setText("Success");
+			}
+			else { tv.setText("HTMLParse failed"); }
+			tv.invalidate();
+					
+			super.onPostExecute(jPage);
+		}
+	}
+	
+	public class DownloadMotions extends AsyncTask<String, Integer, JSONObject> 
+	{
+		@Override
+		protected void onPreExecute() {
+			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
+			tv.setText("Downloading Motions...");
+			tv.invalidate();
+			super.onPreExecute();
+		}
+
+		@Override
+		// doInBackground: take string array containing ticker names and download
+		protected JSONObject doInBackground(String... tickers) {
+			Log.i("LG", "MainActivity:DownloadMotions:doInBackground: Executing download trades");
+			
+			HttpClient http_client = new DefaultHttpClient();   
+			StringBuilder sb = new StringBuilder();
+			HttpGet http_get = new HttpGet(URL_API_SECURITY+tickers[0]);
+			
+			try {
+				HttpResponse http_response=http_client.execute(http_get);
+				sb.append(EntityUtils.toString(http_response.getEntity()));
+			} catch (Exception e) { Log.i("LG", "Exception:"+e.getMessage()); }
+			
+			// Check for errors
+			if(sb.toString().contains("only please") || sb.toString().startsWith("0")
+				|| sb.toString().contains("Error")) // error
+			{
+					return null;
+			}
+
+			//return sb.toString();
+			return parseMotionsHTML(sb.toString());
+		}
+
+		@Override
+		protected void onPostExecute(JSONObject jPage) {
+			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
+			Log.i("LG", "Notification download postExecute");
+			
+			//JSONObject jMotions = parseMotionsHTML(sPage);
+			if(jPage!=null) { 
+				fillNotifications(jPage, "Motions");	 
+				tv.setText("Success");
+			}
+			else { tv.setText("HTMLParse failed"); }
+			tv.invalidate();
+					
+			super.onPostExecute(jPage);
+		}
 	}
 	
 
@@ -1066,7 +1145,6 @@ public class MainActivity extends Activity {
         // Lookup Button
         Button btn_lookup = (Button) findViewById(R.id.main_btn_lookup);
      	btn_lookup.setOnClickListener( new Button.OnClickListener() {
-				@Override
 				public void onClick(View v) {
 					EditText et_ticker = (EditText) findViewById(R.id.main_editText_ticker);
      				Spinner spn = (Spinner) findViewById(R.id.main_spinner_selector);
@@ -1083,7 +1161,6 @@ public class MainActivity extends Activity {
      	//Browse Button
      	Button btn_browse = (Button) findViewById(R.id.main_btn_browse);
      	btn_browse.setOnClickListener( new Button.OnClickListener() {
-				@Override
 				public void onClick(View v) {
      					Intent intent = new Intent(getApplicationContext(), BrowseActivity.class);
      					startActivityForResult(intent,1);
