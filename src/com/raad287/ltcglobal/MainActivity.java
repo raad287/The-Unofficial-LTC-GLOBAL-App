@@ -224,13 +224,76 @@ public class MainActivity extends Activity {
 		}
 		
 		
-		Log.i("LG", "Parsed Notifications: "+sNotifications);
+		//Log.i("LG", "Parsed Notifications: "+sNotifications);
 		try {
 			jNotifications.put("string", sNotifications);
 		}catch (JSONException e) { Log.i("LG", e.getMessage()); }
 		
 		return jNotifications;
 	}
+	
+	public JSONObject parseDividendsHTML(String sPage)
+	{
+		Log.i("LG", "parseDividendsHTML");
+		JSONObject jDividends = new JSONObject();
+		
+		int id_notification_start = sPage.indexOf("<th colspan=\"5\" scope=\"col\">Dividends</th>");
+		int id_notification_end = sPage.indexOf("<th colspan=\"3\" scope=\"col\">Trade History (last 20)</th>");
+		
+		if (id_notification_start==-1 || id_notification_end==-1) { return null; }
+		
+		String sDividends= sPage.substring(id_notification_start, id_notification_end);
+		sDividends = stripHTML(sDividends);
+		
+		StringBuffer sb = new StringBuffer();
+
+		//Filter out \r and \t from 
+		for (int j = 0; j < sDividends.length(); j++) {
+			if ((sDividends.charAt(j) != '\r') && (sDividends.charAt(j) != '\t')) {
+			   
+			  // Filter out &xx;	
+				if(j<sDividends.length()-2) {
+				   if( (sDividends.charAt(j)!='&') && (sDividends.charAt(j+2)!=';') )
+				   {
+					   sb.append(sDividends.charAt(j));
+				   }
+				   else {
+					   // skip over
+					   j=j+3;
+				   } 
+				}else 
+				{ sb.append(sDividends.charAt(j)); }
+				
+	        }}
+		sDividends = sb.toString();
+		
+		// Filter out leading newline's and whitespace
+		int marker=0;
+		for (int i=0; i<sDividends.length(); i++)
+		{
+			if(sDividends.charAt(i)!=(' ') && sDividends.charAt(i)!=('\r') 
+					&& sDividends.charAt(i)!=('\r'))
+			{
+				marker=i;
+				break;
+			}
+		}
+
+		StringBuilder sb2 = new StringBuilder(sDividends);
+		if(sDividends.length()>11)
+		{
+			sb2.delete(0, 10);
+			sDividends = sb2.toString();
+		}
+
+		//Log.i("LG", "Parsed Dividends: "+sDividends);
+		try {
+			jDividends.put("string", sDividends);
+		}catch (JSONException e) { Log.i("LG", e.getMessage()); }
+		
+		return jDividends;
+	}
+	
 	
 	public JSONObject parseMotionsHTML(String sPage)
 	{
@@ -281,7 +344,7 @@ public class MainActivity extends Activity {
 		}
 		
 		
-		Log.i("LG", "Parsed Notifications: "+sMotions);
+		//Log.i("LG", "Parsed Notifications: "+sMotions);
 		try {
 			jMotions.put("string", sMotions);
 		}catch (JSONException e) { Log.i("LG", e.getMessage()); }
@@ -539,7 +602,7 @@ public class MainActivity extends Activity {
 		}
 		
 		// Get ids
-		Log.i("LG", "Get Ids");
+		//Log.i("LG", "Get Ids");
 		JSONArray jIds = new JSONArray();
 		jIds = jHistory.names();
 		if(jIds==null)
@@ -566,7 +629,7 @@ public class MainActivity extends Activity {
 		}
 		
 		// Fill Layout
-		Log.i("LG", "Fill Layout");
+		//Log.i("LG", "Fill Layout");
 
 		// Description Row
 		TableRow tr_desc = new TableRow(this);
@@ -593,7 +656,7 @@ public class MainActivity extends Activity {
 		tl_trade_history.addView(tr_desc);
 		for (int i=0; i<num_trades; i++)
 		{
-			Log.i("LG", "Fill Table");
+			//Log.i("LG", "Fill Table");
 			// Trade Row
 			TableRow tr_trade = new TableRow(this);
 			tr_trade.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
@@ -614,7 +677,7 @@ public class MainActivity extends Activity {
 				Log.i("LG", "JSONException:"+e.getMessage());
 			}
 	
-			Log.i("LG", "Add TextViews");
+			//Log.i("LG", "Add TextViews");
 			tr_trade.addView(tv_timestamp);
 			tr_trade.addView(tv_amount);
 			tr_trade.addView(tv_quantity);
@@ -818,7 +881,8 @@ public class MainActivity extends Activity {
 		}
 		else if(type.equals("Dividends"))
 		{
-			
+			new DownloadTicker().execute(ticker);
+			new DownloadDividends().execute(ticker);
 		}
 		else if(type.equals("Contract & Prospectus"))
 		{
@@ -831,6 +895,67 @@ public class MainActivity extends Activity {
 			new DownloadNotifications().execute(ticker);
 		}
 	}
+
+	public class DownloadDividends extends AsyncTask<String, Integer, JSONObject> 
+	{
+		@Override
+		protected void onPreExecute() {
+			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
+			tv.setText("Downloading Dividends...");
+			tv.invalidate();
+			super.onPreExecute();
+		}
+	
+		@Override
+		// doInBackground: take string array containing ticker names and download
+		protected JSONObject doInBackground(String... tickers) {
+			Log.i("LG", "MainActivity:DownloadMotions:doInBackground: Executing download dividends");
+			
+			HttpClient http_client = new DefaultHttpClient();   
+			StringBuilder sb = new StringBuilder();
+			HttpGet http_get = new HttpGet(URL_API_SECURITY+tickers[0]);
+			
+			try {
+				HttpResponse http_response=http_client.execute(http_get);
+				sb.append(EntityUtils.toString(http_response.getEntity()));
+			} catch (Exception e) { Log.i("LG", "Exception:"+e.getMessage()); }
+			
+			// Check for errors
+			if(sb.toString().contains("only please") || sb.toString().startsWith("0")
+				|| sb.toString().contains("Error")) // error
+			{
+					return null;
+			}
+	
+			//return sb.toString();
+			return parseDividendsHTML(sb.toString());
+		}
+	
+		@Override
+		protected void onPostExecute(JSONObject jPage) {
+			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
+			Log.i("LG", "Notification download postExecute");
+			
+			//JSONObject jMotions = parseMotionsHTML(sPage);
+			if(jPage!=null) { 
+				fillNotifications(jPage, "Dividends");
+				tv.setText("Success");
+			}
+			else { 
+				tv.setText("No Dividends, or failed to parse"); 
+				TableLayout tl_data = (TableLayout)findViewById(R.id.main_tableLayout_data);
+				tl_data.removeAllViews();
+				tl_data.invalidate();
+			
+			}
+			tv.invalidate();
+					
+			super.onPostExecute(jPage);
+		}
+	}
+
+
+
 
 	public class DownloadHistory extends AsyncTask<String, Integer, JSONObject> 
 	{
@@ -847,7 +972,7 @@ public class MainActivity extends Activity {
 		@Override
 		// doInBackground: take string array containing ticker names and download
 		protected JSONObject doInBackground(String... tickers) {
-			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download trades");
+			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download history");
 			
 			HttpClient http_client = new DefaultHttpClient();   
 			StringBuilder sb = new StringBuilder();
@@ -929,7 +1054,7 @@ public class MainActivity extends Activity {
 		@Override
 		// doInBackground: take string array containing ticker names and download
 		protected JSONObject doInBackground(String... tickers) {
-			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download trades");
+			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download ticker");
 			
 			HttpClient http_client = new DefaultHttpClient();   
 			StringBuilder sb = new StringBuilder();
@@ -980,7 +1105,7 @@ public class MainActivity extends Activity {
 		@Override
 		// doInBackground: take string array containing ticker names and download
 		protected JSONObject doInBackground(String... tickers) {
-			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download trades");
+			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download security");
 			
 			HttpClient http_client = new DefaultHttpClient();   
 			StringBuilder sb = new StringBuilder();
@@ -1030,7 +1155,7 @@ public class MainActivity extends Activity {
 		@Override
 		// doInBackground: take string array containing ticker names and download
 		protected JSONObject doInBackground(String... tickers) {
-			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download trades");
+			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download notifications");
 			
 			HttpClient http_client = new DefaultHttpClient();   
 			StringBuilder sb = new StringBuilder();
@@ -1082,7 +1207,7 @@ public class MainActivity extends Activity {
 		@Override
 		// doInBackground: take string array containing ticker names and download
 		protected JSONObject doInBackground(String... tickers) {
-			Log.i("LG", "MainActivity:DownloadMotions:doInBackground: Executing download trades");
+			Log.i("LG", "MainActivity:DownloadMotions:doInBackground: Executing download motions");
 			
 			HttpClient http_client = new DefaultHttpClient();   
 			StringBuilder sb = new StringBuilder();
@@ -1121,9 +1246,7 @@ public class MainActivity extends Activity {
 		}
 	}
 	
-
-
-    @Override
+	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);

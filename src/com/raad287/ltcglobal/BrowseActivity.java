@@ -109,7 +109,7 @@ public class BrowseActivity extends Activity {
 		{
 			try {
 				items[i]=jTickers.names().getString(i);
-				Log.i("LG", "Item"+items[i]);
+				//Log.i("LG", "Item"+items[i]);
 			} catch (JSONException e) { 
 				// if populateList fails finish the activity
 				Log.i("LG", "JSONException:"+e.getMessage()); 
@@ -120,7 +120,7 @@ public class BrowseActivity extends Activity {
 				}
 		}
 		Arrays.sort(items);
-		Log.i("LG", "Items:"+items.toString());
+		//Log.i("LG", "Items:"+items.toString());
 		ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, 
 		        android.R.layout.simple_list_item_1, items);
 		ListView lv_tickers = (ListView) this.findViewById(R.id.browse_listView_tickers);
