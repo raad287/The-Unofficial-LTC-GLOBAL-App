@@ -576,8 +576,11 @@ public class MainActivity extends Activity {
                 Color.rgb(0, 200, 0),                   // line color
                 Color.rgb(0, 100, 0),                   // point color
                 null);                                  // fill color (none)
- 
- 
+
+        Paint p = series1Format.getLinePaint();
+        p.setStrokeWidth(3);
+        series1Format.setLinePaint(p);
+        
         // same as above:
         mySimpleXYPlot.addSeries(series,series1Format);
         try {
