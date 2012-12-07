@@ -31,30 +31,38 @@
 	       				            android:layout_width="fill_parent"
 	       				            android:layout_height="wrap_content" >
 
-	       				            <Button
-	       				                android:id="@+id/main_btn_browse"
+	       				            <TableRow
+	       				                android:id="@+id/tableRow6"
 	       				                android:layout_width="wrap_content"
 	       				                android:layout_height="wrap_content"
-	       				                android:layout_alignParentLeft="true"
-	       				                android:text="Browse" />
+	       				                android:layout_centerHorizontal="true"
+	       				                android:layout_centerVertical="false" >
 
-	       				            <EditText
-	       				                android:id="@+id/main_editText_ticker"
-	       				                android:layout_width="150dp"
-	       				                android:layout_height="wrap_content"
-	       				                android:layout_centerInParent="true"
-	       				                android:ems="10"
-	       				                android:text="LTC-GLOBAL" >
+	       				                <Button
+	       				                    android:id="@+id/main_btn_browse"
+	       				                    android:layout_width="wrap_content"
+	       				                    android:layout_height="wrap_content"
+	       				                    android:text="Browse" />
 
-	       				                <requestFocus />
-	       				            </EditText>
+	       				                <Button
+	       				                    android:id="@+id/main_btn_lookup"
+	       				                    android:layout_width="wrap_content"
+	       				                    android:layout_height="wrap_content"
+	       				                    android:text="@string/main_btn_lookup" />
 
-	       				            <Button
-	       				                android:id="@+id/main_btn_lookup"
-	       				                android:layout_width="wrap_content"
-	       				                android:layout_height="wrap_content"
-	       				                android:layout_alignParentRight="true"
-	       				                android:text="@string/main_btn_lookup" />
+	       				                <Button
+	       				                    android:id="@+id/main_btn_settings"
+	       				                    android:layout_width="wrap_content"
+	       				                    android:layout_height="wrap_content"
+	       				                    android:text="Settings" />
+
+	       				                <Button
+	       				                    android:id="@+id/main_btn_external"
+	       				                    android:layout_width="wrap_content"
+	       				                    android:layout_height="wrap_content"
+	       				                    android:text="External" />
+
+	       				            </TableRow>
 
 	       				        </RelativeLayout>
 
@@ -62,11 +70,29 @@
 	       				            android:layout_width="fill_parent"
 	       				            android:layout_height="wrap_content" >
 
-	       				            <Spinner
-	       				                android:id="@+id/main_spinner_selector"
+	       				            <TableRow
+	       				                android:id="@+id/tableRow1"
 	       				                android:layout_width="wrap_content"
 	       				                android:layout_height="wrap_content"
-	       				                android:layout_centerHorizontal="true" />
+	       				                android:layout_centerHorizontal="true"
+	       				                android:layout_centerVertical="false" >
+
+	       				                <EditText
+	       				                    android:id="@+id/main_editText_ticker"
+	       				                    android:layout_width="150dp"
+	       				                    android:layout_height="wrap_content"
+	       				                    android:ems="10"
+	       				                    android:text="LTC-GLOBAL" >
+
+	       				                    <requestFocus />
+	       				                </EditText>
+
+	       				                <Spinner
+	       				                    android:id="@+id/main_spinner_selector"
+	       				                    android:layout_width="wrap_content"
+	       				                    android:layout_height="wrap_content" />
+
+	       				            </TableRow>
 
 	       				        </RelativeLayout>
 

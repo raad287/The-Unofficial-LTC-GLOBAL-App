@@ -2,66 +2,46 @@ package com.raad287.ltcglobal;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.graphics.*;
+import android.net.Uri;
 import android.os.Bundle;
 import com.androidplot.Plot;
 import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.series.XYSeries;
 import com.androidplot.xy.*;
-
- 
 import java.text.*;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Set;
-
-import com.androidplot.xy.SimpleXYSeries;
-import com.androidplot.series.XYSeries;
-import com.androidplot.xy.*;
-import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.WindowManager;
 import android.widget.Button;
-
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-
 import android.os.AsyncTask;
 import android.os.Build;
-import android.os.Bundle;
-
-import android.app.Activity;
-
 import android.util.Log;
 import android.view.Menu;
-import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TableLayout;
@@ -77,6 +57,7 @@ public class MainActivity extends Activity {
 	public static final String URL_API_HISTORY = "http://www.litecoinglobal.com/api/history/";
 	public static final String URL_API_TICKER = "http://www.litecoinglobal.com/api/ticker/";
 	public static final String URL_API_SECURITY ="http://www.litecoinglobal.com/security/";
+	public static final String URL_API_ORDERS = "https://www.litecoinglobal.com/api/orders/";
 	
 	final Context context = this;
 	
@@ -430,6 +411,80 @@ public class MainActivity extends Activity {
 		return jTicker;
 	}
 	
+	// take unsorted json string, return json object
+	public JSONObject parseOrdersJSON(String sOrders)
+	{
+		// parse orders from string
+		JSONObject jOrders;
+		try
+		{
+			jOrders = new JSONObject(sOrders);
+			Log.i("LG", "Orders Parsed!");
+			Log.i("LG", jOrders.toString());
+
+		} catch (JSONException e) { 
+			Log.i("LG", "JSONException:" + e.getMessage());
+			return null;
+		}
+		
+		
+		Log.i("LG", "Get Ids");
+     	JSONArray jIds = jOrders.names();
+     	if(jIds==null)
+     	{
+     		return null;
+     	}
+     	
+     	JSONObject jBids = new JSONObject();
+     	JSONObject jAsks = new JSONObject();
+     	
+ 		long[] sorted_ids= new long[jIds.length()];
+ 		for (int i=0; i<jIds.length(); i++)
+ 		{
+ 			try {
+ 				sorted_ids[i]=jIds.getLong(i);
+ 			} catch (JSONException e) { Log.i("LG", "JSONException:"+e.getMessage()); }
+ 		}
+ 		
+ 		// Sort
+ 		Log.i("LG", "Sort");
+ 		Arrays.sort(sorted_ids); 	// Ascending
+ 		
+     	// Fill jBids and jAsks
+     	Log.i("LG", "Filling jBids and jAsks");
+     	try 
+     	{
+	     	for (int i=0; i<jIds.length(); i++)
+	     	{
+	     		// pull the orders by the sorted ids
+	     		JSONObject jOrder = jOrders.getJSONObject(String.valueOf(sorted_ids[i]));
+	     		
+	     		if(jOrder.getString("buy_sell").equals("bid"))
+	     		{
+	     			if(jBids.names()!=null) { jBids.put(String.valueOf(jBids.names().length()), jOrder); }
+	     			else { jBids.put("0", jOrder); }
+	     		}
+	     		else if(jOrder.getString("buy_sell").equals("ask"))
+	     		{
+	     			if(jAsks.names()!=null) { jAsks.put(String.valueOf(jAsks.names().length()), jOrder); }
+	     			else { jAsks.put("0", jOrder); }
+	     		}
+	     		
+	     	}
+     	} catch (JSONException e) { Log.i("LG", e.getMessage()); }
+     	
+     	jOrders=null;
+     	try {
+     		jOrders=new JSONObject();
+	     	jOrders.put("bids", jBids);
+	     	jOrders.put("asks", jAsks);
+     	} catch (JSONException e) { Log.i("LG", e.getMessage()); return null; }
+     	
+     	return jOrders;
+		
+	}
+	
+	
 	public void fillTicker(JSONObject jTicker)
 	{
 		TextView tv_latest = (TextView) findViewById(R.id.main_textView_latest);
@@ -581,7 +636,29 @@ public class MainActivity extends Activity {
         p.setStrokeWidth(3);
         series1Format.setLinePaint(p);
         
-        // same as above:
+        mySimpleXYPlot.setDomainValueFormat(new Format() {
+
+        	// create a simple date format that draws on the year portion of our timestamp.
+        	// see http://download.oracle.com/javase/1.4.2/docs/api/java/text/SimpleDateFormat.html
+            // for a full description of SimpleDateFormat.
+        	private SimpleDateFormat dateFormat = new SimpleDateFormat("dd");
+ 
+            @Override
+            public StringBuffer format(Object obj, StringBuffer toAppendTo, FieldPosition pos) {
+ 
+                // because our timestamps are in seconds and SimpleDateFormat expects milliseconds
+                // we multiply our timestamp by 1000:
+                long timestamp = ((Number) obj).longValue() * 1000;
+                Date date = new Date(timestamp);
+                return dateFormat.format(date, toAppendTo, pos);
+            }
+ 
+            @Override
+            public Object parseObject(String source, ParsePosition pos) {
+                return null;
+ 
+            }});
+        
         mySimpleXYPlot.addSeries(series,series1Format);
         try {
 			mySimpleXYPlot.setTitle(jHistory.getString("ticker_name"));
@@ -592,6 +669,129 @@ public class MainActivity extends Activity {
         mySimpleXYPlot.redraw();
         //mySimpleXYPlot.invalidate();
 	}
+	
+	public void fillOrdersChart(JSONObject jOrders, String ticker)
+	{
+		
+		JSONObject jBids,jAsks;
+		try 
+		{
+	     	jBids = jOrders.getJSONObject("bids");
+	     	jAsks = jOrders.getJSONObject("asks"); 
+		} catch (JSONException e) { Log.i("LG", e.getMessage()); return; }
+		
+		Number[] bid_amount,bid_quantity=null;
+		Number[] ask_amount,ask_quantity=null;
+		XYSeries bid_series=null;
+		XYSeries ask_series=null;
+     	
+     	// Fill Bid Arrays
+		if(jBids.names()!=null)
+		{
+			bid_amount = new Number[jBids.names().length()]; 
+			bid_quantity = new Number[jBids.names().length()];
+		
+	     	try 
+	     	{
+		     	for(int i=0; i<jBids.names().length()-1; i++)
+		     	{
+		     		JSONObject jBid=jBids.getJSONObject(String.valueOf(i));
+		     		bid_amount[i]=jBid.getDouble("amount");
+		     		bid_quantity[i]=jBid.getDouble("quantity");
+		     	}
+	     	} catch (JSONException e) { Log.i("LG", e.getMessage()); }
+	     	
+	     	// Create Bid Series
+	     	bid_series = new SimpleXYSeries(
+	     			Arrays.asList(bid_amount),
+	                Arrays.asList(bid_quantity),
+	                "Bids");
+		}
+		
+     	
+     	
+     	// Fill Ask Arrays
+		if(jAsks.names()!=null)
+		{
+			ask_amount = new Number[jAsks.names().length()]; 
+			ask_quantity = new Number[jAsks.names().length()];
+	     	
+	     	try
+	     	{
+		     	for(int i=0; i<jAsks.names().length()-1; i++)
+		     	{
+		     		JSONObject jAsk=jAsks.getJSONObject(String.valueOf(i));
+		     		ask_amount[i]=jAsk.getDouble("amount");
+		     		ask_quantity[i]=jAsk.getDouble("quantity");
+		     	}
+	     	} catch (JSONException e) { Log.i("LG", e.getMessage()); }
+	     	
+	     	ask_series = new SimpleXYSeries(
+	     			Arrays.asList(ask_amount),
+	                Arrays.asList(ask_quantity),
+	                "Bids");
+		}
+		
+		// initialize our XYPlot reference:
+     	XYPlot mySimpleXYPlot = (XYPlot) findViewById(R.id.mySimpleXYPlot);
+     	Iterator<XYSeries> series_iterator=mySimpleXYPlot.getSeriesSet().iterator();
+     	
+     	// clear out the previous series
+     	while(series_iterator.hasNext())
+     	{
+     		mySimpleXYPlot.removeSeries((XYSeries)series_iterator.next());
+     	}
+     	
+     	//customize domain and range labels
+        mySimpleXYPlot.setDomainLabel("Amount");
+        mySimpleXYPlot.setRangeLabel("Quantity");
+        
+  
+        mySimpleXYPlot.setRangeValueFormat(new DecimalFormat("0"));
+        mySimpleXYPlot.setRangeStep(XYStepMode.INCREMENT_BY_PIXELS, 10);
+        
+        // set the top boundary to the average of the bids and asks quantities
+        double average=0;
+        
+       
+        
+        mySimpleXYPlot.setDomainValueFormat(new DecimalFormat("0.00"));
+        mySimpleXYPlot.setDomainStep(XYStepMode.SUBDIVIDE, 2);	
+        mySimpleXYPlot.setTicksPerRangeLabel(3); 	// reduce the number of range labels
+        mySimpleXYPlot.disableAllMarkup();			// remove placement aids
+         
+
+        
+        // 
+        // ask Formatter
+        LineAndPointFormatter askFormat = new LineAndPointFormatter(
+                Color.rgb(200, 0, 0),                   // line color
+                Color.rgb(100, 0, 0),                   // point color
+                Color.rgb(100, 0, 0));                  // fill color); 
+        Paint p = askFormat.getLinePaint();
+        p.setStrokeWidth(3);
+        askFormat.setLinePaint(p);
+        
+        // bid Formatter
+        LineAndPointFormatter bidFormat = new LineAndPointFormatter(
+                Color.rgb(0, 0, 200),                   // line color
+                Color.rgb(0, 0, 100),                   // point color
+                Color.rgb(0, 0, 100));                  // fill color);      
+ 
+        p = bidFormat.getLinePaint();
+        p.setStrokeWidth(3);
+        bidFormat.setLinePaint(p);
+        
+        if(bid_series!=null) { mySimpleXYPlot.addSeries(bid_series,bidFormat); }		// add bid series
+        if(ask_series!=null) { mySimpleXYPlot.addSeries(ask_series,askFormat); }
+        
+		mySimpleXYPlot.setTitle(ticker );
+
+        mySimpleXYPlot.redraw();
+        //mySimpleXYPlot.invalidate();
+	}
+	
+	
 
 	
 	
@@ -686,6 +886,133 @@ public class MainActivity extends Activity {
 			tr_trade.addView(tv_quantity);
 			tl_trade_history.addView(tr_trade);
 		}
+	}
+	
+	// fillTable: fill trade history table main UI
+	public void fillOrdersTable(JSONObject jOrders)
+	{
+		JSONObject jBids,jAsks;
+		try { 
+			jBids = jOrders.getJSONObject("bids");
+			jAsks = jOrders.getJSONObject("asks");
+		} catch (JSONException e) { Log.i("LG", e.getMessage()); return; }
+
+			
+		TableLayout tl_trade_history = (TableLayout) findViewById(R.id.main_tableLayout_data);
+		tl_trade_history.removeAllViews();
+			
+		TextView tv_title = new TextView(this);
+		tv_title.setText("Orderbook");
+		tl_trade_history.addView(tv_title);
+		
+			
+		TableRow tr_main_row=new TableRow(this);
+		
+		// Generate Bid Table Layout
+		TableLayout tl_bids = new TableLayout(this);
+		if (jBids.names()!=null)
+		{
+			// Add bid description row
+			TableRow tr_desc = new TableRow(this);
+			TextView tv_desc_amount=new TextView(this);
+			tv_desc_amount.setText("Bid Amt");
+			tr_desc.addView(tv_desc_amount);
+			TextView tv_desc_quantity=new TextView(this);
+			tv_desc_quantity.setText("Bid Qty");
+			tr_desc.addView(tv_desc_quantity);
+			tl_bids.addView(tr_desc);
+			
+			//reverse the order of the bids row
+			long sorted_ids[] = new long[jBids.names().length()];
+			for (int i=0; i<jBids.names().length(); i++)
+			{
+				try
+				{
+					sorted_ids[i]=jBids.names().getLong(i);
+				} catch (JSONException e) { Log.i("LG", e.getMessage()); return; }
+			}
+			Arrays.sort(sorted_ids); 	// Ascending
+			long[] asc_ids = new long [sorted_ids.length];
+			for (int i=0; i<sorted_ids.length; i++) { asc_ids[i]=sorted_ids[i]; }
+			for (int i=0; i<sorted_ids.length; i++) { sorted_ids[i]=asc_ids[(sorted_ids.length-1)-i]; }
+				
+
+			// iterate through bids
+			for (int i=0; i<jBids.names().length(); i++)
+			{
+				//Log.i("LG", "Fill Table");
+				// Trade Row
+				TableRow tr_bid = new TableRow(this);
+				tr_bid.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
+					
+				TextView tv_amount = new TextView(this);
+				TextView tv_quantity = new TextView(this);
+				tv_amount.setPadding(0, 0, 10, 0);
+				tv_quantity.setPadding(0, 0, 20, 0);
+					
+				// Pull order data from JSON
+				
+				try {
+					JSONObject jBid = jBids.getJSONObject(String.valueOf(sorted_ids[i]));
+					tv_amount.setText(jBid.getString("amount"));
+					tv_quantity.setText(jBid.getString("quantity"));
+				} catch (JSONException e) {
+					Log.i("LG", "JSONException:"+e.getMessage());
+				}
+			
+				tr_bid.addView(tv_amount);
+				tr_bid.addView(tv_quantity);
+				tl_bids.addView(tr_bid);
+			}
+		}
+		// Add TableLayout tl_bids to main row
+		tr_main_row.addView(tl_bids);
+			
+		// Generate Ask Table Layout
+		TableLayout tl_asks = new TableLayout(this);
+		if (jAsks.names()!=null)
+		{
+			// Add ask description row
+			TableRow tr_desc = new TableRow(this);
+			TextView tv_desc_amount=new TextView(this);
+			tv_desc_amount.setText("Ask Amt");
+			tr_desc.addView(tv_desc_amount);
+			TextView tv_desc_quantity=new TextView(this);
+			tv_desc_quantity.setText("Ask Qty");
+			tr_desc.addView(tv_desc_quantity);
+			tl_asks.addView(tr_desc);
+			
+			for (int i=0; i<jBids.names().length(); i++)
+			{
+				//Log.i("LG", "Fill Table");
+				// Trade Row
+				TableRow tr_ask = new TableRow(this);
+				tr_ask.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
+								
+				TextView tv_amount = new TextView(this);
+				TextView tv_quantity = new TextView(this);
+				tv_amount.setPadding(0, 0, 10, 0);
+				tv_quantity.setPadding(0, 0, 20, 0);
+	
+				// Pull order data from JSON
+				try {
+					JSONObject jAsk = jAsks.getJSONObject(String.valueOf(i));
+					tv_amount.setText(jAsk.getString("amount"));
+					tv_quantity.setText(jAsk.getString("quantity"));
+				} catch (JSONException e) {
+					Log.i("LG", "JSONException:"+e.getMessage());
+				}
+						
+				tr_ask.addView(tv_amount);
+				tr_ask.addView(tv_quantity);
+				tl_asks.addView(tr_ask);
+			}
+		}
+
+		tr_main_row.addView(tl_asks);				// Add TableLayout tl_bids to main row
+		tl_trade_history.addView(tr_main_row);		// add main row to main layout
+		
+			
 	}
 	
 	// Fill tl_data with notification query
@@ -897,6 +1224,11 @@ public class MainActivity extends Activity {
 			new DownloadTicker().execute(ticker);
 			new DownloadNotifications().execute(ticker);
 		}
+		else if(type.equals("Orderbook"))
+		{
+			new DownloadTicker().execute(ticker);
+			new DownloadOrders().execute(ticker);
+		}
 	}
 
 	public class DownloadDividends extends AsyncTask<String, Integer, JSONObject> 
@@ -1035,6 +1367,93 @@ public class MainActivity extends Activity {
 			}
 			tv.invalidate();
 			super.onPostExecute(jHistory);
+		}
+		
+	}
+	
+	public class DownloadOrders extends AsyncTask<String, Integer, JSONObject> 
+	{
+		
+
+		@Override
+		protected void onPreExecute() {
+			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
+			tv.setText("Downloading Orders...");
+			tv.invalidate();
+			super.onPreExecute();
+		}
+
+		@Override
+		// doInBackground: take string array containing ticker names and download
+		protected JSONObject doInBackground(String... tickers) {
+			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download orders");
+			
+			HttpClient http_client = new DefaultHttpClient();   
+			StringBuilder sb = new StringBuilder();
+			HttpGet http_get = new HttpGet(URL_API_ORDERS+tickers[0]);
+			
+			try {
+				HttpResponse http_response=http_client.execute(http_get);
+				sb.append(EntityUtils.toString(http_response.getEntity()));
+				
+			} catch (Exception e) { 
+				Log.i("LG", "Exception:"+e.getMessage());
+				return null;
+			}
+			
+			// Check for errors
+			if(sb.toString().contains("only please") || sb.toString().startsWith("0")
+				|| sb.toString().contains("Error")) // error
+			{
+				return null;
+			}
+					
+			//return sb.toString();
+			// parse orders into json object
+			JSONObject jOrders = parseOrdersJSON(sb.toString());
+			try {
+				jOrders.put("ticker_name", tickers[0]);
+			} catch (JSONException e) { Log.i("LG", e.getMessage()); }
+			
+			return jOrders;
+		}
+
+		@Override
+		protected void onPostExecute(JSONObject jOrders) {
+			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
+			//JSONObject jOrders = parseOrdersJSON(sOrders);
+			
+			if(jOrders !=null)
+			{
+				String ticker="";
+				try {
+					ticker = jOrders.getString("ticker_name");
+				} catch (JSONException e) { Log.i("LG", e.getMessage()); }
+				
+				jOrders.remove("ticker_name");
+				fillOrdersChart(jOrders, ticker);
+				//jOrders.remove("ticker_name");
+				fillOrdersTable(jOrders);
+				//tv.setText("Success");
+			}
+			else
+			{
+				AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context);
+				alertDialogBuilder.setMessage("Unable to download ticker");
+				alertDialogBuilder.setTitle("Error");
+				alertDialogBuilder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+			           public void onClick(DialogInterface dialog, int id) {
+			               // User clicked OK button
+			           }
+			       });
+				alertDialogBuilder.show();
+				
+				tv.setText("Failed");
+			}
+			
+			tv.invalidate();
+			
+			super.onPostExecute(jOrders);
 		}
 		
 	}
@@ -1260,7 +1679,7 @@ public class MainActivity extends Activity {
 
         initChart();
         
-      //Selector
+        //Selector
     	Spinner spn_nav = (Spinner) findViewById(R.id.main_spinner_selector);
     	ArrayAdapter<?> adapter = ArrayAdapter.createFromResource(this, R.array.selector, android.R.layout.simple_spinner_item);
     	adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -1284,7 +1703,8 @@ public class MainActivity extends Activity {
 				}
      		});
      	
-     	//Browse Button
+     	// Browse Button
+     	// Launch the browse activity
      	Button btn_browse = (Button) findViewById(R.id.main_btn_browse);
      	btn_browse.setOnClickListener( new Button.OnClickListener() {
 				public void onClick(View v) {
@@ -1292,7 +1712,35 @@ public class MainActivity extends Activity {
      					startActivityForResult(intent,1);
      					
 				}
-     		});
+     	});
+     	
+     	// Settings Button
+     	// Launch the settings activity
+     	Button btn_settings = (Button) findViewById(R.id.main_btn_settings);
+     	btn_settings.setOnClickListener( new Button.OnClickListener() {
+				public void onClick(View v) {
+     					//Intent intent = new Intent(getApplicationContext(), BrowseActivity.class);
+     					//startActivityForResult(intent,1);
+     					
+				}
+     	});
+     	
+     	// External Button
+     	// Launch the browser toward the securities page
+     	Button btn_external = (Button) findViewById(R.id.main_btn_external);
+     	btn_external.setOnClickListener( new Button.OnClickListener() {
+				public void onClick(View v) {
+					EditText et_ticker = (EditText) findViewById(R.id.main_editText_ticker);
+     				
+					if(!et_ticker.getText().toString().equals("")) // make sure there's something
+     				{
+						Uri uriUrl = Uri.parse(URL_API_SECURITY+et_ticker.getText().toString());
+					    Intent iBrowser = new Intent(Intent.ACTION_VIEW, uriUrl);
+					    startActivity(iBrowser);
+     				}
+				}
+     	});
+     	
      
 		
     }

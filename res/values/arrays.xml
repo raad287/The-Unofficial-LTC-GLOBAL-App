@@ -6,6 +6,7 @@
         <item >Notifications</item>
         <item >Motions</item>
         <item >Dividends</item>
+        <item >Orderbook</item>
     </string-array>
     
 </resources>
