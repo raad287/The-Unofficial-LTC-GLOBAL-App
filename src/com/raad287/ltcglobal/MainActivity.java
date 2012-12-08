@@ -16,6 +16,7 @@ import java.util.Set;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.WindowManager;
@@ -58,6 +59,26 @@ public class MainActivity extends Activity {
 	public static final String URL_API_TICKER = "http://www.litecoinglobal.com/api/ticker/";
 	public static final String URL_API_SECURITY ="http://www.litecoinglobal.com/security/";
 	public static final String URL_API_ORDERS = "https://www.litecoinglobal.com/api/orders/";
+	
+	private static String SHARED_PREF_KEY="ULTCG";
+	private static String PREF_MIN_DOMAIN = "MIN_DOMAIN";
+	private static String PREF_MIN_DOMAIN_AUTO = "MIN_DOMAIN_AUTO";
+	private static String PREF_MAX_DOMAIN = "MAX_DOMAIN";
+	private static String PREF_MAX_DOMAIN_AUTO = "MAX_DOMAIN_AUTO";
+	private static String PREF_MIN_RANGE = "MIN_RANGE";
+	private static String PREF_MIN_RANGE_AUTO = "MIN_RANGE_AUTO";
+	private static String PREF_MAX_RANGE = "MAX_RANGE";
+	private static String PREF_MAX_RANGE_AUTO = "MAX_RANGE_AUTO";
+	
+	
+	private static float DEFAULT_MIN_DOMAIN = 0;
+	private static float DEFAULT_MAX_DOMAIN = 500;
+	private static float DEFAULT_MIN_RANGE = 0;
+	private static float DEFAULT_MAX_RANGE =500;
+	private static boolean DEFAULT_MIN_DOMAIN_AUTO = true;
+	private static boolean DEFAULT_MAX_DOMAIN_AUTO = true;
+	private static boolean DEFAULT_MIN_RANGE_AUTO = true;
+	private static boolean DEFAULT_MAX_RANGE_AUTO = true;
 	
 	final Context context = this;
 	
@@ -518,10 +539,14 @@ public class MainActivity extends Activity {
 		}catch (JSONException e) { Log.i("LG", "JSONException:"+e.getMessage()); }
 		
 	}
-	
-	public void initChart()
+		
+	public void fillChart(JSONObject jHistory, boolean desc)
 	{
+		
+		 // initialize our XYPlot reference:
+		
 		XYPlot mySimpleXYPlot= (XYPlot) findViewById(R.id.mySimpleXYPlot);
+		mySimpleXYPlot.clear();
 		
 		//customize domain and range labels
         mySimpleXYPlot.setDomainLabel("Day of Month");
@@ -559,15 +584,10 @@ public class MainActivity extends Activity {
      // by default, AndroidPlot displays developer guides to aid in laying out your plot.
         // To get rid of them call disableAllMarkup():
         mySimpleXYPlot.disableAllMarkup();
-	}
 		
-	public void fillChart(JSONObject jHistory, boolean desc)
-	{
-		XYPlot mySimpleXYPlot;
-		 // initialize our XYPlot reference:
         mySimpleXYPlot = (XYPlot) findViewById(R.id.mySimpleXYPlot);
         Iterator<XYSeries> series_iterator=mySimpleXYPlot.getSeriesSet().iterator();
-      
+        mySimpleXYPlot.setDomainStep(XYStepMode.SUBDIVIDE, 5);	
         
    
         // clear out the previous series
@@ -660,6 +680,10 @@ public class MainActivity extends Activity {
             }});
         
         mySimpleXYPlot.addSeries(series,series1Format);
+        
+        mySimpleXYPlot.setDomainBoundaries(mySimpleXYPlot.getCalculatedMinX(), mySimpleXYPlot.getCalculatedMaxX(), BoundaryMode.AUTO);
+        mySimpleXYPlot.setRangeBoundaries(mySimpleXYPlot.getCalculatedMinY(), mySimpleXYPlot.getCalculatedMaxY(), BoundaryMode.AUTO);
+        
         try {
 			mySimpleXYPlot.setTitle(jHistory.getString("ticker_name"));
 		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
@@ -680,8 +704,8 @@ public class MainActivity extends Activity {
 	     	jAsks = jOrders.getJSONObject("asks"); 
 		} catch (JSONException e) { Log.i("LG", e.getMessage()); return; }
 		
-		Number[] bid_amount,bid_quantity=null;
-		Number[] ask_amount,ask_quantity=null;
+		Number[] bid_amount = null,bid_quantity=null;
+		Number[] ask_amount = null,ask_quantity=null;
 		XYSeries bid_series=null;
 		XYSeries ask_series=null;
      	
@@ -734,6 +758,7 @@ public class MainActivity extends Activity {
 		
 		// initialize our XYPlot reference:
      	XYPlot mySimpleXYPlot = (XYPlot) findViewById(R.id.mySimpleXYPlot);
+     	mySimpleXYPlot.clear();
      	Iterator<XYSeries> series_iterator=mySimpleXYPlot.getSeriesSet().iterator();
      	
      	// clear out the previous series
@@ -747,23 +772,18 @@ public class MainActivity extends Activity {
         mySimpleXYPlot.setRangeLabel("Quantity");
         
   
+        
         mySimpleXYPlot.setRangeValueFormat(new DecimalFormat("0"));
         mySimpleXYPlot.setRangeStep(XYStepMode.INCREMENT_BY_PIXELS, 10);
         
-        // set the top boundary to the average of the bids and asks quantities
-        double average=0;
-        
-       
-        
+      
         mySimpleXYPlot.setDomainValueFormat(new DecimalFormat("0.00"));
-        mySimpleXYPlot.setDomainStep(XYStepMode.SUBDIVIDE, 2);	
+        mySimpleXYPlot.setDomainStep(XYStepMode.SUBDIVIDE, 5);	
+        
         mySimpleXYPlot.setTicksPerRangeLabel(3); 	// reduce the number of range labels
         mySimpleXYPlot.disableAllMarkup();			// remove placement aids
          
-
-        
-        // 
-        // ask Formatter
+     // ask Formatter
         LineAndPointFormatter askFormat = new LineAndPointFormatter(
                 Color.rgb(200, 0, 0),                   // line color
                 Color.rgb(100, 0, 0),                   // point color
@@ -781,14 +801,124 @@ public class MainActivity extends Activity {
         p = bidFormat.getLinePaint();
         p.setStrokeWidth(3);
         bidFormat.setLinePaint(p);
-        
-        if(bid_series!=null) { mySimpleXYPlot.addSeries(bid_series,bidFormat); }		// add bid series
-        if(ask_series!=null) { mySimpleXYPlot.addSeries(ask_series,askFormat); }
-        
 		mySimpleXYPlot.setTitle(ticker );
+		// Add the new Series
+     	if(bid_series!=null) { mySimpleXYPlot.addSeries(bid_series,bidFormat); }		// add bid series
+        if(ask_series!=null) { mySimpleXYPlot.addSeries(ask_series,askFormat); }
 
+        SharedPreferences sp = getSharedPreferences(SHARED_PREF_KEY, 0);
+
+        double Dmin, Dmax, Rmin, Rmax;
+        //Calc Domain Minimum
+        double low_x=0;
+        if (bid_amount!=null)
+        {
+	        for (int i=0; i<bid_amount.length-1; i++)
+	        {
+	        	if (bid_amount[i].doubleValue() < low_x) { low_x=bid_amount[i].doubleValue(); }
+	        }
+        }
+        if (ask_amount!=null)
+        {
+	        for (int i=0; i<ask_amount.length-1; i++)
+	        {
+	        	if (ask_amount[i].doubleValue() < low_x) { low_x=ask_amount[i].doubleValue(); }
+	        }
+        }
+        Dmin=low_x;
+        
+        //Calc Domain Maximum
+        double high_x=1;
+        if (bid_amount!=null)
+        {
+	        for (int i=0; i<bid_amount.length-1; i++)
+	        {
+	        	if (bid_amount[i].doubleValue() > high_x) { high_x=bid_amount[i].doubleValue(); }
+	        }
+        }
+        if (ask_amount!=null)
+        {
+	        for (int i=0; i<ask_amount.length-1; i++)
+	        {
+	        	if (ask_amount[i].doubleValue() > high_x) { high_x=ask_amount[i].doubleValue(); }
+	        }
+        }
+        Dmax=high_x;
+        
+        //Calc Range Minimum
+        double low_y=0;
+        if (bid_quantity!=null)
+        {
+	        for (int i=0; i<bid_quantity.length-1; i++)
+	        {
+	        	if (bid_quantity[i].doubleValue() < low_y) { low_y=bid_quantity[i].doubleValue(); }
+	        }
+        }
+        if (ask_quantity!=null)
+        {
+	        for (int i=0; i<ask_quantity.length-1; i++)
+	        {
+	        	if (ask_quantity[i].doubleValue() < low_y) { low_y=ask_quantity[i].doubleValue(); }
+	        }
+        }
+        Rmin=low_y;
+        
+        //Calc Range Maximum
+       
+        double high_y=1;
+        if (bid_quantity!=null)
+        {
+	        for (int i=0; i<bid_quantity.length-1; i++)
+	        {
+	        	if (bid_quantity[i].doubleValue() > high_y) { high_y=bid_quantity[i].doubleValue(); }
+	        }
+        }
+        if (ask_quantity!=null)
+        {
+	        for (int i=0; i<ask_quantity.length-1; i++)
+	        {
+	        	if (ask_quantity[i].doubleValue() > high_y) { high_y=ask_quantity[i].doubleValue(); }
+	        }
+        }
+        Rmax=high_y;
+      
+        
+        // set the domain and range
+        if(!sp.getBoolean(PREF_MIN_DOMAIN_AUTO, DEFAULT_MIN_DOMAIN_AUTO))	// Auto Off
+        {
+        	Dmin= sp.getFloat(PREF_MIN_DOMAIN, DEFAULT_MIN_DOMAIN);
+        }
+        
+        if(!sp.getBoolean(PREF_MAX_DOMAIN_AUTO, DEFAULT_MAX_DOMAIN_AUTO)) // Auto Off
+        {
+        	Dmax=sp.getFloat(PREF_MAX_DOMAIN, DEFAULT_MAX_DOMAIN);
+        }
+        
+        if(!sp.getBoolean(PREF_MIN_RANGE_AUTO, DEFAULT_MIN_RANGE_AUTO))	// Auto Off
+        {
+        	Rmin = sp.getFloat(PREF_MIN_RANGE, DEFAULT_MIN_RANGE);
+        }
+        
+        if(!sp.getBoolean(PREF_MAX_RANGE_AUTO, DEFAULT_MAX_RANGE_AUTO))	// Auto Off
+        {
+        	Rmax = sp.getFloat(PREF_MAX_RANGE, DEFAULT_MIN_RANGE);
+        }
+    
+        if(Dmin < 0 ) { Dmin = 0; }
+        if(Rmin < 0 ) { Rmin = 0; }
+        if (Dmax < Dmin ) { Dmax = 1 + Dmin + (Dmin/2); }
+        if (Rmax < Rmin ) { Rmax = 1 + Rmin + (Rmin/2); }
+        
+       /* 
+        mySimpleXYPlot.setDomainLeftMin(Dmin);
+        mySimpleXYPlot.setDomainRightMax(Dmax);
+        mySimpleXYPlot.setRangeBottomMin(Rmin);
+        mySimpleXYPlot.setRangeTopMax(Rmax);
+		*/
+        mySimpleXYPlot.setDomainBoundaries(Dmin, Dmax, BoundaryMode.FIXED);
+        mySimpleXYPlot.setRangeBoundaries(Rmin, Rmax, BoundaryMode.FIXED);
+		
         mySimpleXYPlot.redraw();
-        //mySimpleXYPlot.invalidate();
 	}
 	
 	
@@ -919,6 +1049,9 @@ public class MainActivity extends Activity {
 			tr_desc.addView(tv_desc_amount);
 			TextView tv_desc_quantity=new TextView(this);
 			tv_desc_quantity.setText("Bid Qty");
+			tv_desc_amount.setPadding(0, 0, 10, 0);
+			tv_desc_quantity.setPadding(0, 0, 20, 0);
+			
 			tr_desc.addView(tv_desc_quantity);
 			tl_bids.addView(tr_desc);
 			
@@ -1434,7 +1567,7 @@ public class MainActivity extends Activity {
 				fillOrdersChart(jOrders, ticker);
 				//jOrders.remove("ticker_name");
 				fillOrdersTable(jOrders);
-				//tv.setText("Success");
+				tv.setText("Success");
 			}
 			else
 			{
@@ -1676,8 +1809,10 @@ public class MainActivity extends Activity {
         //Prevent keyboard from popping up automatically
         getWindow().setSoftInputMode(
         	      WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-
-        initChart();
+        
+        // Disable Chart Markup
+        XYPlot mySimpleXYPlot= (XYPlot) findViewById(R.id.mySimpleXYPlot);
+        mySimpleXYPlot.disableAllMarkup();
         
         //Selector
     	Spinner spn_nav = (Spinner) findViewById(R.id.main_spinner_selector);
@@ -1719,8 +1854,8 @@ public class MainActivity extends Activity {
      	Button btn_settings = (Button) findViewById(R.id.main_btn_settings);
      	btn_settings.setOnClickListener( new Button.OnClickListener() {
 				public void onClick(View v) {
-     					//Intent intent = new Intent(getApplicationContext(), BrowseActivity.class);
-     					//startActivityForResult(intent,1);
+     					Intent intent = new Intent(getApplicationContext(), SettingsActivity.class);
+     					startActivityForResult(intent, 2);
      					
 				}
      	});
@@ -1753,27 +1888,35 @@ public class MainActivity extends Activity {
     
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
+    	// Browse Activity
     	if (requestCode == 1) {
-
-    	     if(resultCode == RESULT_OK){
-
-    	      String result=data.getStringExtra("result");
-    	     EditText et = (EditText) findViewById(R.id.main_editText_ticker);
-    	     et.setText(result);
-    	     
-    	     Spinner spn= (Spinner) findViewById(R.id.main_spinner_selector);
-    	     Query((String)spn.getSelectedItem(),result);
-    	      
-
+	    	if(resultCode == RESULT_OK) {
+	    			String result=data.getStringExtra("result");
+	    			EditText et = (EditText) findViewById(R.id.main_editText_ticker);
+	    			et.setText(result);
+	
+	    			Spinner spn= (Spinner) findViewById(R.id.main_spinner_selector);
+	    			Query((String)spn.getSelectedItem(),result);
+	    	}
+	
+	    	if (resultCode == RESULT_CANCELED) {
+	
+	    	     TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
+	    	     tv.setText("Unable to download all ticker data");
+	    	     tv.invalidate();
+	    	}
+	    }
+    	
+    	// Settings Activity
+    	if ( requestCode==2)
+    	{
+    		// Refresh the last query
+    		EditText et = (EditText) findViewById(R.id.main_editText_ticker);
+    		Spinner spn= (Spinner) findViewById(R.id.main_spinner_selector);
+    		Query((String)spn.getSelectedItem(), et.getText().toString());
     	}
-
-    	if (resultCode == RESULT_CANCELED) {
-
-    	     TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
-    	     tv.setText("Unable to download all ticker data");
-    	     tv.invalidate();
-    	}
-    	}//onAcrivityResult
+    		
+    	
 
     }
  }
