@@ -50,10 +50,40 @@ public class SettingsActivity extends Activity {
 		CheckBox cb_auto_minRange = (CheckBox) findViewById(R.id.settings_cb_auto_minRange);
 		CheckBox cb_auto_maxRange = (CheckBox) findViewById(R.id.settings_cb_auto_maxRange);
 		
-		editor.putFloat(PREF_MIN_DOMAIN, Float.valueOf(et_minDomain.getText().toString()));
-		editor.putFloat(PREF_MAX_DOMAIN, Float.valueOf(et_maxDomain.getText().toString()));
-		editor.putFloat(PREF_MIN_RANGE, Float.valueOf(et_minRange.getText().toString()));
-		editor.putFloat(PREF_MAX_RANGE, Float.valueOf(et_maxRange.getText().toString()));
+		float min_domain = Float.valueOf(et_minDomain.getText().toString());
+		float max_domain = Float.valueOf(et_maxDomain.getText().toString());
+		float min_range = Float.valueOf(et_minRange.getText().toString());
+		float max_range = Float.valueOf(et_maxRange.getText().toString());
+		
+		// basic error checking
+		if(min_domain<0) 
+		{ 
+			min_domain=0; 
+			et_minDomain.setText(String.valueOf(min_domain));
+		}
+		
+		if(max_domain<=min_domain) 
+		{ 
+			max_domain=min_domain+1;
+			et_maxDomain.setText(String.valueOf(max_domain));
+		}
+		
+		if(min_range<0) 
+		{ 
+			min_range=0; 
+			et_minRange.setText(String.valueOf(min_range));
+		}
+		if(max_range<=min_range) 
+		{ 
+			max_range=min_range+1; 
+			et_maxRange.setText(String.valueOf(max_range));
+		}
+		
+		
+		editor.putFloat(PREF_MIN_DOMAIN, min_domain);
+		editor.putFloat(PREF_MAX_DOMAIN, max_domain);
+		editor.putFloat(PREF_MIN_RANGE, min_range);
+		editor.putFloat(PREF_MAX_RANGE, max_range);
 		
 		editor.putBoolean(PREF_MIN_DOMAIN_AUTO, cb_auto_minDomain.isChecked());
 		editor.putBoolean(PREF_MAX_DOMAIN_AUTO, cb_auto_maxDomain.isChecked());

@@ -38,6 +38,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
 import android.widget.AdapterView;
@@ -50,7 +52,7 @@ import android.widget.TableLayout.LayoutParams;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.graphics.Color;
-
+import com.raad287.ltcglobal.LTGComm;
 
 
 
@@ -69,6 +71,8 @@ public class MainActivity extends Activity {
 	private static String PREF_MIN_RANGE_AUTO = "MIN_RANGE_AUTO";
 	private static String PREF_MAX_RANGE = "MAX_RANGE";
 	private static String PREF_MAX_RANGE_AUTO = "MAX_RANGE_AUTO";
+	public static int MSG_QUERY_RETURN=2;
+	public static int MSG_QUERY_FAILURE=3;
 	
 	
 	private static float DEFAULT_MIN_DOMAIN = 0;
@@ -82,12 +86,119 @@ public class MainActivity extends Activity {
 	
 	final Context context = this;
 	
+	public class LTGHandler extends Handler
+	{
+
+		@Override
+		public void handleMessage(Message msg) {
+			if(msg==null) { return; }
+			
+			if(msg.arg1== MSG_QUERY_FAILURE)
+			{
+				TextView tv= (TextView) findViewById(R.id.main_tv_downloading);
+				tv.setText("Query Failed.");
+			}
+			
+			// Query has been completed
+			if (msg.arg1 == MSG_QUERY_RETURN )
+			{
+				TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
+				
+				Bundle returnBundle = msg.getData();
+				
+				if(returnBundle.getString("query").equals("dividends"))
+				{
+					JSONObject jDividends = new JSONObject();
+					
+					try{
+						jDividends = new JSONObject (returnBundle.getString("data"));
+					} catch (JSONException e) { Log.i("LG", e.getMessage()); return; }
+					
+					fillNotifications(jDividends, "Dividends");
+						
+				}
+				
+				else if(returnBundle.getString("query").equals("history"))
+				{
+					JSONObject jHistory = new JSONObject();
+					try{
+						jHistory = new JSONObject (returnBundle.getString("data"));
+					} catch (JSONException e) { Log.i("LG", e.getMessage()); return; }
+					
+					fillChart(jHistory,true);
+					jHistory.remove("ticker_name");
+					fillTable(jHistory,true);
+					tv.setText("Success");
+				}
+				
+				else if(returnBundle.getString("query").equals("orders"))
+				{
+					JSONObject jOrders = new JSONObject();
+					try{
+						jOrders = new JSONObject (returnBundle.getString("data"));
+					} catch (JSONException e) { Log.i("LG", e.getMessage()); return; }
+					
+					fillOrdersChart(jOrders, returnBundle.getString("ticker"));
+					fillOrdersTable(jOrders);
+					tv.setText("Success");
+				}
+				
+				else if(returnBundle.getString("query").equals("ticker"))
+				{
+					JSONObject jTicker = new JSONObject();
+					try{
+						jTicker = new JSONObject (returnBundle.getString("data"));
+					} catch(JSONException e) { Log.i("LG", e.getMessage()); return; }
+					
+					fillTicker(jTicker); 
+					tv.setText("Success");
+				}
+				
+				else if(returnBundle.getString("query").equals("contract"))
+				{
+					JSONObject jContract = new JSONObject();
+					try{
+						jContract = new JSONObject (returnBundle.getString("data"));
+					} catch(JSONException e) { Log.i("LG", e.getMessage()); return; }
+					
+					fillContract(jContract);	 
+					tv.setText("Success");
+				}
+				
+				else if(returnBundle.getString("query").equals("notifications"))
+				{
+					JSONObject jNotifications = new JSONObject();
+					try{
+						jNotifications = new JSONObject (returnBundle.getString("data"));
+					} catch(JSONException e) { Log.i("LG", e.getMessage()); return; }
+					
+					fillNotifications(jNotifications, "Notifications");	 
+					tv.setText("Success");
+					
+					
+					tv.invalidate();
+				}
+				
+				else if(returnBundle.getString("query").equals("motions"))
+				{
+					JSONObject jMotions = new JSONObject();
+					
+					try{
+						jMotions = new JSONObject (returnBundle.getString("data"));
+					} catch(JSONException e) { Log.i("LG", e.getMessage()); return; }
+
+					fillNotifications(jMotions, "Motions");	 
+					tv.setText("Success");
+				}
+			}
+			super.handleMessage(msg);
+		}
+	}
+	
+	LTGHandler handler = new LTGHandler();
 	
 	public class SpinnerListener implements OnItemSelectedListener {
-
 		int curScreen;
-		
-
 		public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2,
 				long arg3) {
 			Spinner spn = (Spinner)findViewById(R.id.main_spinner_selector);
@@ -95,416 +206,17 @@ public class MainActivity extends Activity {
 			if(!et.getText().toString().equals("")) // make sure there's something
 				{
 					Query((String)spn.getSelectedItem(),et.getText().toString());
-					
 				}
-			
 		}
-
 		public void onNothingSelected(AdapterView<?> arg0) {
-			// TODO Auto-generated method stub
-			
+			//
 		}
-		
 	}
 	
-	// parseTickersRE: raw string return from ticker, and format into JSON using trade timestamp as id
-	public JSONObject parseHistoryRE(String sHistory)
-	{ 
-		JSONObject jHistory = new JSONObject();
-		String re1=".*?";	// Non-greedy match on filler
-		String re2="\\{.*?\\}";	// Uninteresting: cbraces
-		String re3=".*?";	// Non-greedy match on filler
-		String re4="(\\{.*?\\})";	// Curly Braces 1
 	
-		Pattern p = Pattern.compile(re1+re2+re3+re4,Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-		Matcher m = p.matcher(sHistory);
-	    
-		while (m.find())
-	    {
-	        String cbraces1=m.group(1);
-	        try {
-	        	JSONObject jTrade = new JSONObject(cbraces1);
-	        	
-	        	String timestamp = jTrade.getString("timestamp"); 	// extract timestamp from trade
-	        	jTrade.remove("timestamp");		// remove
-				jHistory.put(timestamp, jTrade);	// use timestamp as trade id in jHistory
-				
-			} catch (JSONException e) { 	
-				Log.i("LG", "JSONException:"+e.getMessage()); 
-				return null;}
-	    }
-		
-		return jHistory;
-	}
 	
 	// parses the security page to fill contract & prospectus, notifications and motions
 	// returns JSON
-	
-	public String stripHTML(String s)
-	{
-		Log.i("LG", "stripHTML");
-		StringBuilder sb = new StringBuilder();
-		String sStart = "<";
-		String sEnd =">";
-		sb.append(s);
-		while(sb.indexOf(sStart)!=-1 && sb.indexOf(sEnd, sb.indexOf(sStart))!=-1)
-		{
-			sb.delete(sb.indexOf(sStart),sb.indexOf(sEnd, sb.indexOf(sStart))+1);
-		}
-		return sb.toString();
-	}
-	
-	public String parseSecurityLookup(String sPage, String key, String start, String end)
-	{
-		// Example key = "Ticker</th>" tag = "<td>"
-		// Find Ticker
-		int id1=0;
-		int id2=0;
-		int id3=0;
-		id1=sPage.indexOf(key);
-		Log.i("LG","id1:"+Integer.toString(id1));
-		id2=sPage.indexOf(start,id1); //start
-		
-		Log.i("LG","id2:"+Integer.toString(id2));
-		id3=sPage.indexOf(end,id2); //end
-		
-		Log.i("LG","id3:"+Integer.toString(id3));
-			
-		char[] buffer=new char[id3-(id2+start.length())];
-				
-		sPage.getChars(id2+start.length(), id3, buffer, 0);
-		String parse = String.copyValueOf(buffer);
-		return parse;
-	}
-	
-	public JSONObject parseNotificationsHTML(String sPage)
-	{
-		Log.i("LG", "parseNotificationHTML");
-		JSONObject jNotifications = new JSONObject();
-		int id_notification_start = sPage.indexOf("<div id=\"tab4\" class=\"tab_content\">");
-		int id_notification_end = sPage.indexOf("<div id=\"tab5\" class=\"tab_content\">");
-		String sNotifications= sPage.substring(id_notification_start, id_notification_end);
-		sNotifications = stripHTML(sNotifications);
-		
-		StringBuffer sb = new StringBuffer();
-
-		//Filter out \r and \t from 
-		for (int j = 0; j < sNotifications.length(); j++) {
-			if ((sNotifications.charAt(j) != '\r') && (sNotifications.charAt(j) != '\t')) {
-			   
-			  // Filter out &xx;	
-				if(j<sNotifications.length()-3) {
-				   if( (sNotifications.charAt(j)!='&') && (sNotifications.charAt(j+3)!=';') )
-				   {
-					   sb.append(sNotifications.charAt(j));
-				   }
-				   else {
-					   // skip over
-					   j=j+3;
-				   } 
-				}else 
-				{ sb.append(sNotifications.charAt(j)); }
-	        }}
-		sNotifications = sb.toString();
-		
-		// Filter out leading newline's and whitespace
-		int marker=0;
-		for (int i=0; i<sNotifications.length(); i++)
-		{
-			if(sNotifications.charAt(i)!=(' ') && sNotifications.charAt(i)!=('\r') 
-					&& sNotifications.charAt(i)!=('\r'))
-			{
-				marker=i;
-				break;
-			}
-		}
-		if(marker>0)   // delete the whitespace if found
-		{
-			StringBuilder sb2 = new StringBuilder(sNotifications);
-			sb2.delete(0, marker);
-			sNotifications=sb2.toString();
-		}
-		
-		
-		//Log.i("LG", "Parsed Notifications: "+sNotifications);
-		try {
-			jNotifications.put("string", sNotifications);
-		}catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		
-		return jNotifications;
-	}
-	
-	public JSONObject parseDividendsHTML(String sPage)
-	{
-		Log.i("LG", "parseDividendsHTML");
-		JSONObject jDividends = new JSONObject();
-		
-		int id_notification_start = sPage.indexOf("<th colspan=\"5\" scope=\"col\">Dividends</th>");
-		int id_notification_end = sPage.indexOf("<th colspan=\"3\" scope=\"col\">Trade History (last 20)</th>");
-		
-		if (id_notification_start==-1 || id_notification_end==-1) { return null; }
-		
-		String sDividends= sPage.substring(id_notification_start, id_notification_end);
-		sDividends = stripHTML(sDividends);
-		
-		StringBuffer sb = new StringBuffer();
-
-		//Filter out \r and \t from 
-		for (int j = 0; j < sDividends.length(); j++) {
-			if ((sDividends.charAt(j) != '\r') && (sDividends.charAt(j) != '\t')) {
-			   
-			  // Filter out &xx;	
-				if(j<sDividends.length()-2) {
-				   if( (sDividends.charAt(j)!='&') && (sDividends.charAt(j+2)!=';') )
-				   {
-					   sb.append(sDividends.charAt(j));
-				   }
-				   else {
-					   // skip over
-					   j=j+3;
-				   } 
-				}else 
-				{ sb.append(sDividends.charAt(j)); }
-				
-	        }}
-		sDividends = sb.toString();
-		
-		// Filter out leading newline's and whitespace
-		int marker=0;
-		for (int i=0; i<sDividends.length(); i++)
-		{
-			if(sDividends.charAt(i)!=(' ') && sDividends.charAt(i)!=('\r') 
-					&& sDividends.charAt(i)!=('\r'))
-			{
-				marker=i;
-				break;
-			}
-		}
-
-		StringBuilder sb2 = new StringBuilder(sDividends);
-		if(sDividends.length()>11)
-		{
-			sb2.delete(0, 10);
-			sDividends = sb2.toString();
-		}
-
-		//Log.i("LG", "Parsed Dividends: "+sDividends);
-		try {
-			jDividends.put("string", sDividends);
-		}catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		
-		return jDividends;
-	}
-	
-	
-	public JSONObject parseMotionsHTML(String sPage)
-	{
-		Log.i("LG", "parseMotionsHTML");
-		JSONObject jMotions = new JSONObject();
-		int id_notification_start = sPage.indexOf("<div id=\"tab5\" class=\"tab_content\">");
-		int id_notification_end = sPage.indexOf("<!-- GeoTrust QuickSSL [tm] Smart  Icon tag. Do not edit. -->");
-		String sMotions= sPage.substring(id_notification_start, id_notification_end);
-		sMotions = stripHTML(sMotions);
-		
-		StringBuffer sb = new StringBuffer();
-
-		//Filter out \r and \t from 
-		for (int j = 0; j < sMotions.length(); j++) {
-			if ((sMotions.charAt(j) != '\r') && (sMotions.charAt(j) != '\t')) {
-			   
-			  // Filter out &xx;	
-				if(j<sMotions.length()-3) {
-				   if( (sMotions.charAt(j)!='&') && (sMotions.charAt(j+3)!=';') )
-				   {
-					   sb.append(sMotions.charAt(j));
-				   }
-				   else {
-					   // skip over
-					   j=j+3;
-				   } 
-				}else 
-				{ sb.append(sMotions.charAt(j)); }
-	        }}
-		sMotions = sb.toString();
-		
-		// Filter out leading newline's and whitespace
-		int marker=0;
-		for (int i=0; i<sMotions.length(); i++)
-		{
-			if(sMotions.charAt(i)!=(' ') && sMotions.charAt(i)!=('\r') 
-					&& sMotions.charAt(i)!=('\r'))
-			{
-				marker=i;
-				break;
-			}
-		}
-		if(marker>0)   // delete the whitespace if found
-		{
-			StringBuilder sb2 = new StringBuilder(sMotions);
-			sb2.delete(0, marker);
-			sMotions=sb2.toString();
-		}
-		
-		
-		//Log.i("LG", "Parsed Notifications: "+sMotions);
-		try {
-			jMotions.put("string", sMotions);
-		}catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		
-		return jMotions;
-	}
-	
-	public JSONObject parseSecurityHTML(String sPage)
-	{
-		// Must do error checking before this point, will crash if bad request
-		
-		JSONObject jContract=new JSONObject();
-		
-		// Parse Contract
-		try{
-			jContract.put("ticker", parseSecurityLookup(sPage, "Ticker</th>", "<td>", "</td>"));
-			jContract.put("peer approval", parseSecurityLookup(sPage, "Approval</th>", "<td>", "</td>"));
-			jContract.put("shares issued", parseSecurityLookup(sPage, "Issued</th>", "<td>", "</td>"));
-			jContract.put("shares outstanding", parseSecurityLookup(sPage, "Outstanding</th>", "<td>", "</td>"));
-			jContract.put("issuer", parseSecurityLookup(sPage, "Issuer</th>", "<td>", "</td>"));
-			jContract.put("issuer detail", parseSecurityLookup(sPage, "Detail</th>", "<pre>", "</pre>"));
-			jContract.put("contract", parseSecurityLookup(sPage, "Contract</th>", "<pre>", "</pre>"));
-			jContract.put("executive summary", parseSecurityLookup(sPage, "Summary</th>", "<pre>", "</pre>"));
-			jContract.put("business description", parseSecurityLookup(sPage, "Description</th>", "<pre>", "</pre>"));
-			jContract.put("definition of market", parseSecurityLookup(sPage, "Market</th>", "<pre>", "</pre>"));
-			jContract.put("products and services", parseSecurityLookup(sPage, "Services</th>", "<pre>", "</pre>"));
-			jContract.put("organization and management", parseSecurityLookup(sPage, "and Management</th>", "<pre>", "</pre>"));
-			jContract.put("marketing strategy", parseSecurityLookup(sPage, "Strategy</th>", "<pre>", "</pre>"));
-			jContract.put("executive summary", parseSecurityLookup(sPage, "Summary</th>", "<pre>", "</pre>"));
-			jContract.put("financial management", parseSecurityLookup(sPage, "Financial Management</th>", "<pre>", "</pre>"));
-			
-		}catch (JSONException e) { Log.i("LG", e.getMessage()); }
-
-		//Filter
-		for(int i=0; i<jContract.names().length(); i++)
-		{
-			
-			String line="";
-			try {
-				line = jContract.getString(jContract.names().getString(i));
-			} catch (JSONException e) { Log.i("LG", "JSONException:"+e.getMessage()); }
-			
-			StringBuffer sb = new StringBuffer();
-			//Filter out \r and \t from  strings in jContract
-			for (int j = 0; j < line.length(); j++) {
-				if ((line.charAt(j) != '\r') && (line.charAt(j) != '\t')) {
-				   
-				  // Filter out &xx;	
-					if(j<line.length()-3) {
-					   if( (line.charAt(j)!='&') && (line.charAt(j+3)!=';') )
-					   {
-						   sb.append(line.charAt(j));
-					   }
-					   else {
-						   // skip over
-						   j=j+3;
-					   } }
-					else { sb.append(line.charAt(j)); }
-		        }}
-			line = sb.toString();
-
-			try {
-				jContract.put(jContract.names().getString(i), line);
-			} catch (JSONException e) {
-				Log.i("LG", "JSONException:"+e.getMessage()); }	 }
-		
-		return jContract;
-	}
-	
-	// take unsorted ticker string, return JSONObject
-	public JSONObject parseTickersJSON(String sTickers)
-	{
-
-		JSONObject jTicker = new JSONObject();
-		try {
-			jTicker = new JSONObject(sTickers);
-			
-		} catch (JSONException e) {
-			Log.i("LG", "JSONException:"+e.getMessage());
-			return null;
-		}
-		
-		return jTicker;
-	}
-	
-	// take unsorted json string, return json object
-	public JSONObject parseOrdersJSON(String sOrders)
-	{
-		// parse orders from string
-		JSONObject jOrders;
-		try
-		{
-			jOrders = new JSONObject(sOrders);
-			Log.i("LG", "Orders Parsed!");
-			Log.i("LG", jOrders.toString());
-
-		} catch (JSONException e) { 
-			Log.i("LG", "JSONException:" + e.getMessage());
-			return null;
-		}
-		
-		
-		Log.i("LG", "Get Ids");
-     	JSONArray jIds = jOrders.names();
-     	if(jIds==null)
-     	{
-     		return null;
-     	}
-     	
-     	JSONObject jBids = new JSONObject();
-     	JSONObject jAsks = new JSONObject();
-     	
- 		long[] sorted_ids= new long[jIds.length()];
- 		for (int i=0; i<jIds.length(); i++)
- 		{
- 			try {
- 				sorted_ids[i]=jIds.getLong(i);
- 			} catch (JSONException e) { Log.i("LG", "JSONException:"+e.getMessage()); }
- 		}
- 		
- 		// Sort
- 		Log.i("LG", "Sort");
- 		Arrays.sort(sorted_ids); 	// Ascending
- 		
-     	// Fill jBids and jAsks
-     	Log.i("LG", "Filling jBids and jAsks");
-     	try 
-     	{
-	     	for (int i=0; i<jIds.length(); i++)
-	     	{
-	     		// pull the orders by the sorted ids
-	     		JSONObject jOrder = jOrders.getJSONObject(String.valueOf(sorted_ids[i]));
-	     		
-	     		if(jOrder.getString("buy_sell").equals("bid"))
-	     		{
-	     			if(jBids.names()!=null) { jBids.put(String.valueOf(jBids.names().length()), jOrder); }
-	     			else { jBids.put("0", jOrder); }
-	     		}
-	     		else if(jOrder.getString("buy_sell").equals("ask"))
-	     		{
-	     			if(jAsks.names()!=null) { jAsks.put(String.valueOf(jAsks.names().length()), jOrder); }
-	     			else { jAsks.put("0", jOrder); }
-	     		}
-	     		
-	     	}
-     	} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-     	
-     	jOrders=null;
-     	try {
-     		jOrders=new JSONObject();
-	     	jOrders.put("bids", jBids);
-	     	jOrders.put("asks", jAsks);
-     	} catch (JSONException e) { Log.i("LG", e.getMessage()); return null; }
-     	
-     	return jOrders;
-		
-	}
-	
 	
 	public void fillTicker(JSONObject jTicker)
 	{
@@ -1330,477 +1042,71 @@ public class MainActivity extends Activity {
 	}
 	
 	public void Query(String type, String ticker)
-	{
+	{	
+		LTGComm comm = new LTGComm(handler);
+		TextView tv_status = (TextView) findViewById(R.id.main_tv_downloading);
+		
+		
 		Log.i("LG", "Query: Type:"+type+" for "+ticker);
 		if (type.equals("Trade History"))
 		{
-			new DownloadTicker().execute(ticker);
-			new DownloadHistory().execute(ticker);
+			tv_status.setText("Downloading Ticker...");
+			comm.getTicker(ticker);
+			
+			tv_status.setText("Downloading History...");
+			comm.getHistory(ticker);
+			
 		}
+		
 		else if(type.equals("Motions"))
 		{
-			new DownloadTicker().execute(ticker);
-			new DownloadMotions().execute(ticker);
+			//new DownloadTicker().execute(ticker);
+			//new DownloadMotions().execute(ticker);
+			tv_status.setText("Downloading Ticker...");
+			comm.getTicker(ticker);
+			tv_status.setText("Downloading Motions...");
+			comm.getMotions(ticker);
 		}
 		else if(type.equals("Dividends"))
 		{
-			new DownloadTicker().execute(ticker);
-			new DownloadDividends().execute(ticker);
+			//new DownloadTicker().execute(ticker);
+			//new DownloadDividends().execute(ticker);
+			tv_status.setText("Downloading Ticker...");
+			comm.getTicker(ticker);
+			tv_status.setText("Downloading Dividends...");
+			comm.getDividends(ticker);
 		}
 		else if(type.equals("Contract & Prospectus"))
 		{
-			new DownloadTicker().execute(ticker);
-			new DownloadSecurity().execute(ticker);
+			//new DownloadTicker().execute(ticker);
+			//new DownloadSecurity().execute(ticker);
+			tv_status.setText("Downloading Ticker...");
+			comm.getTicker(ticker);
+			tv_status.setText("Downloading Contract...");
+			comm.getContract(ticker);
 		}
 		else if(type.equals("Notifications"))
 		{
-			new DownloadTicker().execute(ticker);
-			new DownloadNotifications().execute(ticker);
+			//new DownloadTicker().execute(ticker);
+			//new DownloadNotifications().execute(ticker);
+			tv_status.setText("Downloading Ticker...");
+			comm.getTicker(ticker);
+			tv_status.setText("Downloading Notifications...");
+			comm.getNotifications(ticker);
 		}
+	
 		else if(type.equals("Orderbook"))
 		{
-			new DownloadTicker().execute(ticker);
-			new DownloadOrders().execute(ticker);
-		}
-	}
-
-	public class DownloadDividends extends AsyncTask<String, Integer, JSONObject> 
-	{
-		@Override
-		protected void onPreExecute() {
-			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
-			tv.setText("Downloading Dividends...");
-			tv.invalidate();
-			super.onPreExecute();
-		}
-	
-		@Override
-		// doInBackground: take string array containing ticker names and download
-		protected JSONObject doInBackground(String... tickers) {
-			Log.i("LG", "MainActivity:DownloadMotions:doInBackground: Executing download dividends");
-			
-			HttpClient http_client = new DefaultHttpClient();   
-			StringBuilder sb = new StringBuilder();
-			HttpGet http_get = new HttpGet(URL_API_SECURITY+tickers[0]);
-			
-			try {
-				HttpResponse http_response=http_client.execute(http_get);
-				sb.append(EntityUtils.toString(http_response.getEntity()));
-			} catch (Exception e) { Log.i("LG", "Exception:"+e.getMessage()); }
-			
-			// Check for errors
-			if(sb.toString().contains("only please") || sb.toString().startsWith("0")
-				|| sb.toString().contains("Error")) // error
-			{
-					return null;
-			}
-	
-			//return sb.toString();
-			return parseDividendsHTML(sb.toString());
-		}
-	
-		@Override
-		protected void onPostExecute(JSONObject jPage) {
-			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
-			Log.i("LG", "Notification download postExecute");
-			
-			//JSONObject jMotions = parseMotionsHTML(sPage);
-			if(jPage!=null) { 
-				fillNotifications(jPage, "Dividends");
-				tv.setText("Success");
-			}
-			else { 
-				tv.setText("No Dividends, or failed to parse"); 
-				TableLayout tl_data = (TableLayout)findViewById(R.id.main_tableLayout_data);
-				tl_data.removeAllViews();
-				tl_data.invalidate();
-			
-			}
-			tv.invalidate();
-					
-			super.onPostExecute(jPage);
-		}
-	}
-
-
-
-
-	public class DownloadHistory extends AsyncTask<String, Integer, JSONObject> 
-	{
-		
-
-		@Override
-		protected void onPreExecute() {
-			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
-			tv.setText("Downloading History...");
-			tv.invalidate();
-			super.onPreExecute();
-		}
-
-		@Override
-		// doInBackground: take string array containing ticker names and download
-		protected JSONObject doInBackground(String... tickers) {
-			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download history");
-			
-			HttpClient http_client = new DefaultHttpClient();   
-			StringBuilder sb = new StringBuilder();
-			HttpGet http_get = new HttpGet(URL_API_HISTORY+tickers[0]);
-			
-			try {
-				HttpResponse http_response=http_client.execute(http_get);
-				sb.append(EntityUtils.toString(http_response.getEntity()));
-				
-			} catch (Exception e) { 
-				Log.i("LG", "Exception:"+e.getMessage());
-				return null;
-			}
-			
-			// Check for errors
-			if(sb.toString().contains("only please") || sb.toString().startsWith("0")
-				|| sb.toString().contains("Error")) // error
-			{
-				return null;
-			}
-					
-			// Minor string formatting 
-			sb.deleteCharAt(0);		// delete leading '['
-			sb.deleteCharAt(sb.length()-1); // delete trailing ']'
-			
-			// parse history into json object
-			JSONObject jHistory = parseHistoryRE(sb.toString());
-			try {
-				jHistory.put("ticker_name", tickers[0]);
-			} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		 	return jHistory;
-		}
-
-		@Override
-		protected void onPostExecute(JSONObject jHistory) {
-			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
-			if(jHistory !=null)
-			{
-				fillChart(jHistory,true);
-				jHistory.remove("ticker_name");
-				fillTable(jHistory,true);
-				tv.setText("Success");
-			}
-			else
-			{
-				AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context);
-				alertDialogBuilder.setMessage("Unable to download ticker");
-				alertDialogBuilder.setTitle("Error");
-				alertDialogBuilder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-			           public void onClick(DialogInterface dialog, int id) {
-			               // User clicked OK button
-			           }
-			       });
-				alertDialogBuilder.show();
-				
-				tv.setText("Failed");
-			}
-			tv.invalidate();
-			super.onPostExecute(jHistory);
+			//new DownloadTicker().execute(ticker);
+			//new DownloadOrders().execute(ticker);
+			tv_status.setText("Downloading Ticker...");
+			comm.getTicker(ticker);
+			tv_status.setText("Downloading Orders...");
+			comm.getOrders(ticker);
 		}
 		
 	}
-	
-	public class DownloadOrders extends AsyncTask<String, Integer, JSONObject> 
-	{
-		
 
-		@Override
-		protected void onPreExecute() {
-			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
-			tv.setText("Downloading Orders...");
-			tv.invalidate();
-			super.onPreExecute();
-		}
-
-		@Override
-		// doInBackground: take string array containing ticker names and download
-		protected JSONObject doInBackground(String... tickers) {
-			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download orders");
-			
-			HttpClient http_client = new DefaultHttpClient();   
-			StringBuilder sb = new StringBuilder();
-			HttpGet http_get = new HttpGet(URL_API_ORDERS+tickers[0]);
-			
-			try {
-				HttpResponse http_response=http_client.execute(http_get);
-				sb.append(EntityUtils.toString(http_response.getEntity()));
-				
-			} catch (Exception e) { 
-				Log.i("LG", "Exception:"+e.getMessage());
-				return null;
-			}
-			
-			// Check for errors
-			if(sb.toString().contains("only please") || sb.toString().startsWith("0")
-				|| sb.toString().contains("Error")) // error
-			{
-				return null;
-			}
-					
-			//return sb.toString();
-			// parse orders into json object
-			JSONObject jOrders = parseOrdersJSON(sb.toString());
-			try {
-				jOrders.put("ticker_name", tickers[0]);
-			} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-			
-			return jOrders;
-		}
-
-		@Override
-		protected void onPostExecute(JSONObject jOrders) {
-			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
-			//JSONObject jOrders = parseOrdersJSON(sOrders);
-			
-			if(jOrders !=null)
-			{
-				String ticker="";
-				try {
-					ticker = jOrders.getString("ticker_name");
-				} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-				
-				jOrders.remove("ticker_name");
-				fillOrdersChart(jOrders, ticker);
-				//jOrders.remove("ticker_name");
-				fillOrdersTable(jOrders);
-				tv.setText("Success");
-			}
-			else
-			{
-				AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context);
-				alertDialogBuilder.setMessage("Unable to download ticker");
-				alertDialogBuilder.setTitle("Error");
-				alertDialogBuilder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-			           public void onClick(DialogInterface dialog, int id) {
-			               // User clicked OK button
-			           }
-			       });
-				alertDialogBuilder.show();
-				
-				tv.setText("Failed");
-			}
-			
-			tv.invalidate();
-			
-			super.onPostExecute(jOrders);
-		}
-		
-	}
-	
-	
-	
-	
-	public class DownloadTicker extends AsyncTask<String, Integer, JSONObject> 
-	{
-		
-
-		@Override
-		protected void onPreExecute() {
-			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
-			tv.setText("Downloading Ticker...");
-			tv.invalidate();
-			super.onPreExecute();
-		}
-
-		@Override
-		// doInBackground: take string array containing ticker names and download
-		protected JSONObject doInBackground(String... tickers) {
-			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download ticker");
-			
-			HttpClient http_client = new DefaultHttpClient();   
-			StringBuilder sb = new StringBuilder();
-			HttpGet http_get = new HttpGet(URL_API_TICKER+tickers[0]);
-			
-			try {
-				HttpResponse http_response=http_client.execute(http_get);
-				sb.append(EntityUtils.toString(http_response.getEntity()));
-			} catch (Exception e) { Log.i("LG", "Exception:"+e.getMessage()); }
-			
-			// Check for errors
-			if(sb.toString().contains("only please") || sb.toString().startsWith("0")
-				|| sb.toString().contains("Error")) // error
-			{
-					return null;
-			}
-			
-		 	return parseTickersJSON(sb.toString());
-		}
-
-		@Override
-		protected void onPostExecute(JSONObject jTicker) {
-			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
-			
-			if(jTicker!=null) { 
-				fillTicker(jTicker); 
-				tv.setText("Success");
-			}
-			else { tv.setText("Failed"); }
-			tv.invalidate();
-			
-			super.onPostExecute(jTicker);
-			
-		}
-		
-	}
-	
-	public class DownloadSecurity extends AsyncTask<String, Integer, JSONObject> 
-	{
-		@Override
-		protected void onPreExecute() {
-			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
-			tv.setText("Downloading Security...");
-			tv.invalidate();
-			super.onPreExecute();
-		}
-
-		@Override
-		// doInBackground: take string array containing ticker names and download
-		protected JSONObject doInBackground(String... tickers) {
-			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download security");
-			
-			HttpClient http_client = new DefaultHttpClient();   
-			StringBuilder sb = new StringBuilder();
-			HttpGet http_get = new HttpGet(URL_API_SECURITY+tickers[0]);
-			
-			try {
-				HttpResponse http_response=http_client.execute(http_get);
-				sb.append(EntityUtils.toString(http_response.getEntity()));
-			} catch (Exception e) { Log.i("LG", "Exception:"+e.getMessage()); }
-			
-			// Check for errors
-			if(sb.toString().contains("only please") || sb.toString().startsWith("0")
-				|| sb.toString().contains("Error")) // error
-			{
-					return null;
-			}
-
-			return parseSecurityHTML(sb.toString());
-			
-		}
-
-		@Override
-		protected void onPostExecute(JSONObject jContract) {
-			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
-			
-			if(jContract!=null) { 
-				fillContract(jContract);	 
-				tv.setText("Success");
-			}
-			else { tv.setText("HTMLParse failed"); }
-			tv.invalidate();
-					
-			super.onPostExecute(jContract);
-		}
-	}
-	
-	public class DownloadNotifications extends AsyncTask<String, Integer, JSONObject> 
-	{
-		@Override
-		protected void onPreExecute() {
-			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
-			tv.setText("Downloading Notifications...");
-			tv.invalidate();
-			super.onPreExecute();
-		}
-
-		@Override
-		// doInBackground: take string array containing ticker names and download
-		protected JSONObject doInBackground(String... tickers) {
-			Log.i("LG", "MainActivity:DownloadURL:doInBackground: Executing download notifications");
-			
-			HttpClient http_client = new DefaultHttpClient();   
-			StringBuilder sb = new StringBuilder();
-			HttpGet http_get = new HttpGet(URL_API_SECURITY+tickers[0]);
-			
-			try {
-				HttpResponse http_response=http_client.execute(http_get);
-				sb.append(EntityUtils.toString(http_response.getEntity()));
-			} catch (Exception e) { Log.i("LG", "Exception:"+e.getMessage()); }
-			
-			// Check for errors
-			if(sb.toString().contains("only please") || sb.toString().startsWith("0")
-				|| sb.toString().contains("Error")) // error
-			{
-					return null;
-			}
-
-			//return sb.toString();
-			return parseNotificationsHTML(sb.toString());
-		}
-
-		@Override
-		protected void onPostExecute(JSONObject jPage) {
-			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
-			Log.i("LG", "Notification download postExecute");
-			
-			//JSONObject jNotifications = parseNotificationsHTML(sPage);
-			if(jPage!=null) { 
-				fillNotifications(jPage, "Notifications");	 
-				tv.setText("Success");
-			}
-			else { tv.setText("HTMLParse failed"); }
-			tv.invalidate();
-					
-			super.onPostExecute(jPage);
-		}
-	}
-	
-	public class DownloadMotions extends AsyncTask<String, Integer, JSONObject> 
-	{
-		@Override
-		protected void onPreExecute() {
-			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
-			tv.setText("Downloading Motions...");
-			tv.invalidate();
-			super.onPreExecute();
-		}
-
-		@Override
-		// doInBackground: take string array containing ticker names and download
-		protected JSONObject doInBackground(String... tickers) {
-			Log.i("LG", "MainActivity:DownloadMotions:doInBackground: Executing download motions");
-			
-			HttpClient http_client = new DefaultHttpClient();   
-			StringBuilder sb = new StringBuilder();
-			HttpGet http_get = new HttpGet(URL_API_SECURITY+tickers[0]);
-			
-			try {
-				HttpResponse http_response=http_client.execute(http_get);
-				sb.append(EntityUtils.toString(http_response.getEntity()));
-			} catch (Exception e) { Log.i("LG", "Exception:"+e.getMessage()); }
-			
-			// Check for errors
-			if(sb.toString().contains("only please") || sb.toString().startsWith("0")
-				|| sb.toString().contains("Error")) // error
-			{
-					return null;
-			}
-
-			//return sb.toString();
-			return parseMotionsHTML(sb.toString());
-		}
-
-		@Override
-		protected void onPostExecute(JSONObject jPage) {
-			TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
-			Log.i("LG", "Notification download postExecute");
-			
-			//JSONObject jMotions = parseMotionsHTML(sPage);
-			if(jPage!=null) { 
-				fillNotifications(jPage, "Motions");	 
-				tv.setText("Success");
-			}
-			else { tv.setText("HTMLParse failed"); }
-			tv.invalidate();
-					
-			super.onPostExecute(jPage);
-		}
-	}
-	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -1832,7 +1138,6 @@ public class MainActivity extends Activity {
 					if(!et_ticker.getText().toString().equals("")) // make sure there's something
      				{
      					Query((String)spn.getSelectedItem(),et_ticker.getText().toString());
-     					
      				}
 					
 				}
