@@ -429,7 +429,7 @@ public class MainActivity extends Activity {
 		
 	     	try 
 	     	{
-		     	for(int i=0; i<jBids.names().length()-1; i++)
+		     	for(int i=0; i<jBids.names().length(); i++)
 		     	{
 		     		JSONObject jBid=jBids.getJSONObject(String.valueOf(i));
 		     		bid_amount[i]=jBid.getDouble("amount");
@@ -454,7 +454,7 @@ public class MainActivity extends Activity {
 	     	
 	     	try
 	     	{
-		     	for(int i=0; i<jAsks.names().length()-1; i++)
+		     	for(int i=0; i<jAsks.names().length(); i++)
 		     	{
 		     		JSONObject jAsk=jAsks.getJSONObject(String.valueOf(i));
 		     		ask_amount[i]=jAsk.getDouble("amount");
@@ -613,7 +613,7 @@ public class MainActivity extends Activity {
         
         if(!sp.getBoolean(PREF_MAX_RANGE_AUTO, DEFAULT_MAX_RANGE_AUTO))	// Auto Off
         {
-        	Rmax = sp.getFloat(PREF_MAX_RANGE, DEFAULT_MIN_RANGE);
+        	Rmax = sp.getFloat(PREF_MAX_RANGE, DEFAULT_MAX_RANGE);
         }
     
         if(Dmin < 0 ) { Dmin = 0; }

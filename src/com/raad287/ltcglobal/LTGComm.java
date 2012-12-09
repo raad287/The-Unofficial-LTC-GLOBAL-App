@@ -245,6 +245,11 @@ public class LTGComm {
 				jOrders.put("ticker_name", tickers[0]);
 			} catch (JSONException e) { Log.i("LG", e.getMessage()); return null; }
 			
+			if(jOrders==null)
+			{
+				return null;
+			}
+			
 			// prep return bundle
 			Bundle returnBundle = new Bundle();
 			returnBundle.putString("data", jOrders.toString());
@@ -304,6 +309,11 @@ public class LTGComm {
 				jTicker = parser.parseTickersJSON(sb.toString());
 			} catch (Exception e) { Log.i("LG", e.getMessage()); return null; }
 			
+			if(jTicker==null)
+			{
+				return null;
+			}
+			
 			// prep return bundle
 			Bundle returnBundle = new Bundle();
 			returnBundle.putString("data", jTicker.toString());
@@ -361,6 +371,11 @@ public class LTGComm {
 			try {
 				jContract = parser.parseSecurityHTML(sb.toString());
 			} catch (Exception e) { Log.i("LG", e.getMessage()); return null; }
+			
+			if(jContract==null)
+			{
+				return null;
+			}
 			
 			// prep return bundle
 			Bundle returnBundle = new Bundle();

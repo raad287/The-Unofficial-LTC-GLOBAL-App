@@ -349,8 +349,6 @@ public class LTGParser {
 			try
 			{
 				jOrders = new JSONObject(sOrders);
-				Log.i("LG", "Orders Parsed!");
-				Log.i("LG", jOrders.toString());
 
 			} catch (JSONException e) { 
 				Log.i("LG", "JSONException:" + e.getMessage());
