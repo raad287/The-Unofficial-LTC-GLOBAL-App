@@ -525,14 +525,14 @@ public class MainActivity extends Activity {
         double low_x=0;
         if (bid_amount!=null)
         {
-	        for (int i=0; i<bid_amount.length-1; i++)
+	        for (int i=0; i<bid_amount.length; i++)
 	        {
 	        	if (bid_amount[i].doubleValue() < low_x) { low_x=bid_amount[i].doubleValue(); }
 	        }
         }
         if (ask_amount!=null)
         {
-	        for (int i=0; i<ask_amount.length-1; i++)
+	        for (int i=0; i<ask_amount.length; i++)
 	        {
 	        	if (ask_amount[i].doubleValue() < low_x) { low_x=ask_amount[i].doubleValue(); }
 	        }
@@ -543,14 +543,14 @@ public class MainActivity extends Activity {
         double high_x=1;
         if (bid_amount!=null)
         {
-	        for (int i=0; i<bid_amount.length-1; i++)
+	        for (int i=0; i<bid_amount.length; i++)
 	        {
 	        	if (bid_amount[i].doubleValue() > high_x) { high_x=bid_amount[i].doubleValue(); }
 	        }
         }
         if (ask_amount!=null)
         {
-	        for (int i=0; i<ask_amount.length-1; i++)
+	        for (int i=0; i<ask_amount.length; i++)
 	        {
 	        	if (ask_amount[i].doubleValue() > high_x) { high_x=ask_amount[i].doubleValue(); }
 	        }
@@ -561,14 +561,14 @@ public class MainActivity extends Activity {
         double low_y=0;
         if (bid_quantity!=null)
         {
-	        for (int i=0; i<bid_quantity.length-1; i++)
+	        for (int i=0; i<bid_quantity.length; i++)
 	        {
 	        	if (bid_quantity[i].doubleValue() < low_y) { low_y=bid_quantity[i].doubleValue(); }
 	        }
         }
         if (ask_quantity!=null)
         {
-	        for (int i=0; i<ask_quantity.length-1; i++)
+	        for (int i=0; i<ask_quantity.length; i++)
 	        {
 	        	if (ask_quantity[i].doubleValue() < low_y) { low_y=ask_quantity[i].doubleValue(); }
 	        }
@@ -580,14 +580,14 @@ public class MainActivity extends Activity {
         double high_y=1;
         if (bid_quantity!=null)
         {
-	        for (int i=0; i<bid_quantity.length-1; i++)
+	        for (int i=0; i<bid_quantity.length; i++)
 	        {
 	        	if (bid_quantity[i].doubleValue() > high_y) { high_y=bid_quantity[i].doubleValue(); }
 	        }
         }
         if (ask_quantity!=null)
         {
-	        for (int i=0; i<ask_quantity.length-1; i++)
+	        for (int i=0; i<ask_quantity.length; i++)
 	        {
 	        	if (ask_quantity[i].doubleValue() > high_y) { high_y=ask_quantity[i].doubleValue(); }
 	        }
@@ -740,12 +740,13 @@ public class MainActivity extends Activity {
 		} catch (JSONException e) { Log.i("LG", e.getMessage()); return; }
 
 			
-		TableLayout tl_trade_history = (TableLayout) findViewById(R.id.main_tableLayout_data);
-		tl_trade_history.removeAllViews();
+		// erase perious table
+		TableLayout tl_main = (TableLayout) findViewById(R.id.main_tableLayout_data);
+		tl_main.removeAllViews();
 			
 		TextView tv_title = new TextView(this);
 		tv_title.setText("Orderbook");
-		tl_trade_history.addView(tv_title);
+		tl_main.addView(tv_title);
 		
 			
 		TableRow tr_main_row=new TableRow(this);
@@ -756,32 +757,34 @@ public class MainActivity extends Activity {
 		{
 			// Add bid description row
 			TableRow tr_desc = new TableRow(this);
+			
 			TextView tv_desc_amount=new TextView(this);
 			tv_desc_amount.setText("Bid Amt");
+			tv_desc_amount.setPadding(0, 0, 10, 0);
 			tr_desc.addView(tv_desc_amount);
+			
 			TextView tv_desc_quantity=new TextView(this);
 			tv_desc_quantity.setText("Bid Qty");
-			tv_desc_amount.setPadding(0, 0, 10, 0);
 			tv_desc_quantity.setPadding(0, 0, 20, 0);
-			
 			tr_desc.addView(tv_desc_quantity);
-			tl_bids.addView(tr_desc);
 			
+			tl_bids.addView(tr_desc);
+			/*
 			//reverse the order of the bids row
-			long sorted_ids[] = new long[jBids.names().length()];
+			int sorted_ids[] = new int[jBids.names().length()];
 			for (int i=0; i<jBids.names().length(); i++)
 			{
 				try
 				{
-					sorted_ids[i]=jBids.names().getLong(i);
+					sorted_ids[i]=jBids.names().getInt(i);
 				} catch (JSONException e) { Log.i("LG", e.getMessage()); return; }
 			}
 			Arrays.sort(sorted_ids); 	// Ascending
-			long[] asc_ids = new long [sorted_ids.length];
+			int[] asc_ids = new int [sorted_ids.length];
 			for (int i=0; i<sorted_ids.length; i++) { asc_ids[i]=sorted_ids[i]; }
 			for (int i=0; i<sorted_ids.length; i++) { sorted_ids[i]=asc_ids[(sorted_ids.length-1)-i]; }
 				
-
+			*/
 			// iterate through bids
 			for (int i=0; i<jBids.names().length(); i++)
 			{
@@ -798,7 +801,7 @@ public class MainActivity extends Activity {
 				// Pull order data from JSON
 				
 				try {
-					JSONObject jBid = jBids.getJSONObject(String.valueOf(sorted_ids[i]));
+					JSONObject jBid = jBids.getJSONObject(String.valueOf(jBids.names().length()-1-i));
 					tv_amount.setText(jBid.getString("amount"));
 					tv_quantity.setText(jBid.getString("quantity"));
 				} catch (JSONException e) {
@@ -812,7 +815,8 @@ public class MainActivity extends Activity {
 		}
 		// Add TableLayout tl_bids to main row
 		tr_main_row.addView(tl_bids);
-			
+		
+		
 		// Generate Ask Table Layout
 		TableLayout tl_asks = new TableLayout(this);
 		if (jAsks.names()!=null)
@@ -826,8 +830,22 @@ public class MainActivity extends Activity {
 			tv_desc_quantity.setText("Ask Qty");
 			tr_desc.addView(tv_desc_quantity);
 			tl_asks.addView(tr_desc);
-			
-			for (int i=0; i<jBids.names().length(); i++)
+			/*
+			//reverse the order of the bids row
+			int sorted_ids[] = new int[jAsks.names().length()];
+			for (int i=0; i<jAsks.names().length(); i++)
+			{
+				try
+				{
+					sorted_ids[i]=jAsks.names().getInt(i);
+				} catch (JSONException e) { Log.i("LG", e.getMessage()); return; }
+			}
+			Arrays.sort(sorted_ids); 	// Ascending
+			int[] asc_ids = new int [sorted_ids.length];
+			for (int i=0; i<sorted_ids.length; i++) { asc_ids[i]=sorted_ids[i]; }
+			for (int i=0; i<sorted_ids.length; i++) { sorted_ids[i]=asc_ids[(sorted_ids.length-1)-i]; }
+			*/
+			for (int i=0; i<jAsks.names().length(); i++)
 			{
 				//Log.i("LG", "Fill Table");
 				// Trade Row
@@ -855,7 +873,7 @@ public class MainActivity extends Activity {
 		}
 
 		tr_main_row.addView(tl_asks);				// Add TableLayout tl_bids to main row
-		tl_trade_history.addView(tr_main_row);		// add main row to main layout
+		tl_main.addView(tr_main_row);		// add main row to main layout
 		
 			
 	}
