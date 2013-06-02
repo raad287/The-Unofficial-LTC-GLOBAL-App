@@ -19,6 +19,7 @@ public class LTGComm {
 	public static final String URL_API_TICKER = "http://www.litecoinglobal.com/api/ticker/";
 	public static final String URL_API_SECURITY ="http://www.litecoinglobal.com/security/";
 	public static final String URL_API_ORDERS = "https://www.litecoinglobal.com/api/orders/";
+	public static final String URL_API_DIVIDENDS = "https://www.litecoinglobal.com/api/dividendHistory/";
 	
 	public static int MSG_QUERY_RETURN=2;
 	public static int MSG_QUERY_FAILURE=3;
@@ -82,7 +83,7 @@ public class LTGComm {
 			
 			HttpClient http_client = new DefaultHttpClient();   
 			StringBuilder sb = new StringBuilder();
-			HttpGet http_get = new HttpGet(URL_API_SECURITY+tickers[0]);
+			HttpGet http_get = new HttpGet(URL_API_DIVIDENDS+tickers[0]);
 			
 			try {
 				HttpResponse http_response=http_client.execute(http_get);
@@ -97,7 +98,8 @@ public class LTGComm {
 			}
 	
 			// parse dividends
-			JSONObject jDividends = parser.parseDividendsHTML(sb.toString());
+			//JSONObject jDividends = parser.parseDividendsHTML(sb.toString());
+			JSONObject jDividends = parser.parseDividendsJSON(sb.toString());
 			if(jDividends==null) { return null; }
 			
 			// prep return bundle

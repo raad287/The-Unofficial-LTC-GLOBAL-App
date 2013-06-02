@@ -411,5 +411,26 @@ public class LTGParser {
 	     	return jOrders;
 			
 		}
+		
+		// take unsorted json string, return json object
+		public JSONObject parseDividendsJSON(String sDividends)
+		{
+			// parse orders from string
+			JSONObject jDividends = new JSONObject();
+			try
+			{
+				jDividends = new JSONObject(sDividends);
+
+			} catch (JSONException e) { 
+				Log.i("LG", "parseDividendsJSON: JSONException:" + e.getMessage());
+				Log.i("LG", "parseDividendsJSON: sDividends: "+sDividends);
+				return null;
+			}
+					
+			JSONArray jIds = jDividends.names();
+			if(jIds==null) { return null; }
+			
+			return jDividends;
+		}
 	
 }

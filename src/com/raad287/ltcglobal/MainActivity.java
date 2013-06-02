@@ -114,7 +114,7 @@ public class MainActivity extends Activity {
 						jDividends = new JSONObject (returnBundle.getString("data"));
 					} catch (JSONException e) { Log.i("LG", e.getMessage()); return; }
 					
-					fillNotifications(jDividends, "Dividends");
+					fillDividends(jDividends);
 						
 				}
 				
@@ -1057,6 +1057,91 @@ public class MainActivity extends Activity {
 		
 		tl_data.invalidate();
 		
+	}
+	
+	public void fillDividends(JSONObject jDividends)
+	{
+		// do nothing if the history is null
+		if(jDividends==null)
+		{
+			return;
+		}
+		
+		// Get ids
+		//Log.i("LG", "Get Ids");
+		JSONArray jIds = new JSONArray();
+		jIds = jDividends.names();
+		if(jIds==null) { return; }
+		
+		int num_dividends=jIds.length()-1;
+	
+		
+		// Fill Layout
+		//Log.i("LG", "Fill Layout");
+
+		// Description Row
+		TableRow tr_desc = new TableRow(this);
+		tr_desc.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
+		TextView tv_desc_timestamp = new TextView(this);
+		TextView tv_desc_amount = new TextView(this);
+		TextView tv_desc_sharespaid = new TextView(this);
+		TextView tv_desc_status = new TextView(this);
+		
+		tv_desc_timestamp.setText("Timestamp");
+		tv_desc_amount.setText("Amount (LTC)");
+		tv_desc_sharespaid.setText("Shares Paid");
+		tv_desc_status.setText("Status");
+		
+		tv_desc_timestamp.setPadding(0, 0, 10, 0);
+		tv_desc_amount.setPadding(0, 0, 10, 0);
+		tv_desc_sharespaid.setPadding(0, 0, 10, 0);
+		
+		tr_desc.addView(tv_desc_timestamp);
+		tr_desc.addView(tv_desc_amount);
+		tr_desc.addView(tv_desc_sharespaid);
+		tr_desc.addView(tv_desc_status);
+		
+		TableLayout tl_dividend_history = (TableLayout) findViewById(R.id.main_tableLayout_data);
+		tl_dividend_history.removeAllViews();
+		
+		TextView tv_title = new TextView(this);
+		tv_title.setText("Dividends");
+		tl_dividend_history.addView(tv_title);
+		
+		tl_dividend_history.addView(tr_desc);
+		for (int i=0; i<num_dividends; i++)
+		{
+			//Log.i("LG", "Fill Table");
+			// Dividend
+			TableRow tr_dividend = new TableRow(this);
+			tr_dividend.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
+			
+			TextView tv_timestamp = new TextView(this);
+			TextView tv_amount = new TextView(this);
+			TextView tv_sharespaid = new TextView(this);
+			TextView tv_status= new TextView(this);
+			tv_timestamp.setPadding(0, 0, 10, 0);
+			tv_amount.setPadding(0, 0, 10, 0);
+			tv_sharespaid.setPadding(0, 0, 10, 0);
+			
+			// Pull dividend data from JSON
+			try {
+				JSONObject jDividend = jDividends.getJSONObject(Integer.toString(i));
+				tv_timestamp.setText(jDividend.getString("process_time"));
+				tv_amount.setText(jDividend.getString("amount"));
+				tv_sharespaid.setText(jDividend.getString("shares_paid"));
+				tv_status.setText(jDividend.getString("status"));
+			} catch (JSONException e) {
+				Log.i("LG", "JSONException:"+e.getMessage());
+			}
+	
+			//Log.i("LG", "Add TextViews");
+			tr_dividend.addView(tv_timestamp);
+			tr_dividend.addView(tv_amount);
+			tr_dividend.addView(tv_sharespaid);
+			tr_dividend.addView(tv_status);
+			tl_dividend_history.addView(tr_dividend);
+		}
 	}
 	
 	public void Query(String type, String ticker)

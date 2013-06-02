@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
     android:orientation="vertical" >
 
     <ScrollView
         android:id="@+id/scrollView1"
-        android:layout_width="match_parent"
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content" >
 
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
             android:orientation="vertical" >
 
             <TextView
@@ -22,12 +22,12 @@
                 android:textAppearance="?android:attr/textAppearanceMedium" />
 
             <TableLayout
-                android:layout_width="match_parent"
+                android:layout_width="fill_parent"
                 android:layout_height="wrap_content" >
 
                 <TableRow
                     android:id="@+id/tableRow1"
-                    android:layout_width="match_parent"
+                    android:layout_width="fill_parent"
                     android:layout_height="wrap_content" >
 
                     <TextView
@@ -52,7 +52,7 @@
 
                 <TableRow
                     android:id="@+id/TableRow01"
-                    android:layout_width="match_parent"
+                    android:layout_width="fill_parent"
                     android:layout_height="wrap_content" >
 
                     <TextView
@@ -77,7 +77,7 @@
 
                 <TableRow
                     android:id="@+id/TableRow03"
-                    android:layout_width="match_parent"
+                    android:layout_width="fill_parent"
                     android:layout_height="wrap_content" >
 
                     <TextView
@@ -102,7 +102,7 @@
 
                 <TableRow
                     android:id="@+id/TableRow02"
-                    android:layout_width="match_parent"
+                    android:layout_width="fill_parent"
                     android:layout_height="wrap_content" >
 
                     <TextView
@@ -127,7 +127,7 @@
             </TableLayout>
 
             <RelativeLayout
-                android:layout_width="match_parent"
+                android:layout_width="fill_parent"
                 android:layout_height="wrap_content" >
 
                 <TableRow
