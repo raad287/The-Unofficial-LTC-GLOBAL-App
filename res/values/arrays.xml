@@ -1,12 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="selector">
+    <string-array name="selector_main">
         <item >Trade History</item>
         <item >Contract &amp; Prospectus</item>
         <item >Notifications</item>
         <item >Motions</item>
         <item >Dividends</item>
         <item >Orderbook</item>
+    </string-array>
+    <string-array name="selector_portfolio">
+        <item >Personal</item>
+        <item >Trades</item>
+        <item >Dividends</item>
+        <item >Deposits</item>
+        <item >Withdrawals</item>
     </string-array>
     
 </resources>

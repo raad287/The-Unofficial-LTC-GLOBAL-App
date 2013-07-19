@@ -1,44 +1,40 @@
 package com.raad287.ltcglobal;
 import android.app.Activity;
-import android.app.AlertDialog;
+
+import com.raad287.ltcglobal.Constants;
+
+
 import android.graphics.*;
 import android.net.Uri;
 import android.os.Bundle;
-import com.androidplot.Plot;
+
+
 import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.series.XYSeries;
+import com.androidplot.ui.widget.TitleWidget;
 import com.androidplot.xy.*;
+
 import java.text.*;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.Set;
+
+
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.ColorStateList;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.WindowManager;
 import android.widget.Button;
-import java.io.IOException;
+
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import android.os.AsyncTask;
-import android.os.Build;
+
 import android.os.Handler;
 import android.os.Message;
 import android.text.Html;
@@ -63,38 +59,9 @@ import com.google.ads.*;
 
 
 public class MainActivity extends Activity {
-	private static boolean DEBUG_MODE = false;
-	private static boolean PAID = true;
-	
-	public static final String URL_API_HISTORY = "http://www.litecoinglobal.com/api/history/";
-	public static final String URL_API_TICKER = "http://www.litecoinglobal.com/api/ticker/";
-	public static final String URL_API_SECURITY ="http://www.litecoinglobal.com/security/";
-	public static final String URL_API_ORDERS = "https://www.litecoinglobal.com/api/orders/";
-	
-	private static String SHARED_PREF_KEY="ULTCG";
-	private static String PREF_MIN_DOMAIN = "MIN_DOMAIN";
-	private static String PREF_MIN_DOMAIN_AUTO = "MIN_DOMAIN_AUTO";
-	private static String PREF_MAX_DOMAIN = "MAX_DOMAIN";
-	private static String PREF_MAX_DOMAIN_AUTO = "MAX_DOMAIN_AUTO";
-	private static String PREF_MIN_RANGE = "MIN_RANGE";
-	private static String PREF_MIN_RANGE_AUTO = "MIN_RANGE_AUTO";
-	private static String PREF_MAX_RANGE = "MAX_RANGE";
-	private static String PREF_MAX_RANGE_AUTO = "MAX_RANGE_AUTO";
-	public static int MSG_QUERY_RETURN=2;
-	public static int MSG_QUERY_FAILURE=3;
-	
-	
-	private static float DEFAULT_MIN_DOMAIN = 0;
-	private static float DEFAULT_MAX_DOMAIN = 500;
-	private static float DEFAULT_MIN_RANGE = 0;
-	private static float DEFAULT_MAX_RANGE =500;
-	private static boolean DEFAULT_MIN_DOMAIN_AUTO = true;
-	private static boolean DEFAULT_MAX_DOMAIN_AUTO = true;
-	private static boolean DEFAULT_MIN_RANGE_AUTO = true;
-	private static boolean DEFAULT_MAX_RANGE_AUTO = true;
 	
 	private AdView adView;
-
+	Constants constants = new Constants();
 	
 	final Context context = this;
 	
@@ -105,14 +72,14 @@ public class MainActivity extends Activity {
 		public void handleMessage(Message msg) {
 			if(msg==null) { return; }
 			
-			if(msg.arg1== MSG_QUERY_FAILURE)
+			if(msg.arg1== constants.MSG_QUERY_FAILURE)
 			{
 				TextView tv= (TextView) findViewById(R.id.main_tv_downloading);
 				tv.setText("Query Failed.");
 			}
 			
 			// Query has been completed
-			if (msg.arg1 == MSG_QUERY_RETURN )
+			if (msg.arg1 == constants.MSG_QUERY_RETURN )
 			{
 				TextView tv = (TextView) findViewById(R.id.main_tv_downloading);
 				
@@ -138,7 +105,7 @@ public class MainActivity extends Activity {
 					} catch (JSONException e) { Log.i("LG", e.getMessage()); return; }
 					
 					fillHistoryChart(jHistory,true);
-					jHistory.remove("ticker_name");
+					//jHistory.remove("ticker_name");
 					fillTable(jHistory,true);
 					tv.setText("Success");
 				}
@@ -215,10 +182,13 @@ public class MainActivity extends Activity {
 				long arg3) {
 			Spinner spn = (Spinner)findViewById(R.id.main_spinner_selector);
 			EditText et = (EditText)findViewById(R.id.main_editText_ticker);
+			
+			Log.i("LG", "MainActivity:SpinnerListener:spn="+(String)spn.getSelectedItem());
+			
 			if(!et.getText().toString().equals("")) // make sure there's something
-				{
-					Query((String)spn.getSelectedItem(),et.getText().toString());
-				}
+			{
+				Query((String)spn.getSelectedItem(),et.getText().toString());
+			}
 		}
 		public void onNothingSelected(AdapterView<?> arg0) {
 			//
@@ -266,6 +236,13 @@ public class MainActivity extends Activity {
 		
 	public void fillHistoryChart(JSONObject jHistory, boolean desc)
 	{
+		// extract ticker name
+		String ticker_name = "Market History";
+		try
+		{
+			ticker_name=jHistory.getString("ticker_name");
+			jHistory.remove("ticker_name");
+		} catch (JSONException e) { Log.i("LG", "MainActivity:fillHistoryChart:JSONException5:"+e.getMessage()); }
 		
 		 // initialize our XYPlot reference:
 		
@@ -274,7 +251,14 @@ public class MainActivity extends Activity {
 		
 		//customize domain and range labels
         mySimpleXYPlot.setDomainLabel("Day of Month");
-        mySimpleXYPlot.setRangeLabel("Price/LTC");
+        if(Constants.SITE.equals("LTC"))
+        {
+        	mySimpleXYPlot.setRangeLabel("Price/LTC");
+        }
+        else if (Constants.SITE.equals("BTC"))
+        {
+        	mySimpleXYPlot.setRangeLabel("Price/BTC");
+        }
         
         // get rid of decimal points
         mySimpleXYPlot.setRangeValueFormat(new DecimalFormat("0.00"));
@@ -308,56 +292,64 @@ public class MainActivity extends Activity {
      // by default, AndroidPlot displays developer guides to aid in laying out your plot.
         // To get rid of them call disableAllMarkup():
         mySimpleXYPlot.disableAllMarkup();
+        
+        // Widen the title widget to avoid clipping
+        TitleWidget tw_title = mySimpleXYPlot.getTitleWidget();
+        tw_title.setWidth(200);
 		
         mySimpleXYPlot = (XYPlot) findViewById(R.id.mySimpleXYPlot);
         Iterator<XYSeries> series_iterator=mySimpleXYPlot.getSeriesSet().iterator();
         mySimpleXYPlot.setDomainStep(XYStepMode.SUBDIVIDE, 5);	
         
-   
+        
         // clear out the previous series
         while(series_iterator.hasNext())
         {
         	mySimpleXYPlot.removeSeries((XYSeries)series_iterator.next());
         }
         
-     		Log.i("LG", "Get Ids");
+     	
      		JSONArray jIds = jHistory.names();
      		if(jIds==null)
      		{
      			return;
      		}
-     		int num_trades=jHistory.names().length();
+     		int num_trades=jIds.length();
+     
      		long[] sorted_ids= new long[num_trades];
-     		for (int i=0; i<num_trades; i++)
+     		
+     		
+     		for (int i=0; i<num_trades-1; i++)
      		{
      			try {
      				sorted_ids[i]=jIds.getLong(i);
-     			} catch (JSONException e) { Log.i("LG", "JSONException:"+e.getMessage()); }
+     				//Log.i("LG", "sorted_ids[i]="+String.valueOf(sorted_ids[i])+" jIds.getLong(i)="+String.valueOf(jIds.getString(i)));
+     			} catch (JSONException e) { Log.i("LG", "MainActivity:fillHistoryChart:JSONException1 at "+String.valueOf(i)+":"+e.getMessage()); }
      		}
      		
      		// Sort
-     		Log.i("LG", "Sort");
+     		Log.i("LG", "MainActivity:fillHistoryChart:Sort");
      		Arrays.sort(sorted_ids); 	// Ascending
      		if (desc==true) { 
-     			long[] asc_ids = new long [num_trades];
-     			for (int i=0; i<num_trades; i++) { asc_ids[i]=sorted_ids[i]; }
-     			for (int i=0; i<num_trades; i++) { sorted_ids[i]=asc_ids[(num_trades-1)-i]; }
+     			Collections.reverse(Arrays.asList(sorted_ids)); // reverse order of array
      		}
      		
      		Number[] timestamps = new Number[num_trades];
      		Number[] amount = new Number[num_trades];
      		Number[] quantity = new Number[num_trades];
      		
-     		for (int i=0; i<num_trades; i++)
+     		
+     		for (int i=0; i<sorted_ids.length-1; i++)
     		{
      			try {
-					JSONObject jTrade = jHistory.getJSONObject(Long.toString(sorted_ids[i]));
+     				//Log.i("LG", "sorted_id="+sorted_ids[i]);
+					JSONObject jTrade = jHistory.getJSONObject(String.valueOf(sorted_ids[i]));
 					timestamps[i] = sorted_ids[i];
 					amount[i] = jTrade.getDouble("amount");
 					quantity[i] = jTrade.getLong("quantity");
 					
 				} catch (JSONException e) {
-					Log.i("LG", "JSONException:"+e.getMessage());
+					Log.i("LG", "MainActivity:fillHistoryChart:JSONException2 "+String.valueOf(i)+":"+e.getMessage());
 				}
     		}
      	
@@ -408,12 +400,8 @@ public class MainActivity extends Activity {
         mySimpleXYPlot.setDomainBoundaries(mySimpleXYPlot.getCalculatedMinX(), mySimpleXYPlot.getCalculatedMaxX(), BoundaryMode.AUTO);
         mySimpleXYPlot.setRangeBoundaries(mySimpleXYPlot.getCalculatedMinY(), mySimpleXYPlot.getCalculatedMaxY(), BoundaryMode.AUTO);
         
-        try {
-			mySimpleXYPlot.setTitle(jHistory.getString("ticker_name"));
-		} catch (JSONException e) { Log.i("LG", e.getMessage()); }
-		
-        
-     
+
+		mySimpleXYPlot.setTitle(ticker_name);
         mySimpleXYPlot.redraw();
         //mySimpleXYPlot.invalidate();
 	}
@@ -495,6 +483,10 @@ public class MainActivity extends Activity {
         mySimpleXYPlot.setDomainLabel("Amount");
         mySimpleXYPlot.setRangeLabel("Quantity");
         
+     // Widen the title widget to avoid clipping
+        TitleWidget tw_title = mySimpleXYPlot.getTitleWidget();
+        tw_title.setWidth(200);
+        
   
         
         mySimpleXYPlot.setRangeValueFormat(new DecimalFormat("0"));
@@ -530,7 +522,7 @@ public class MainActivity extends Activity {
      	if(bid_series!=null) { mySimpleXYPlot.addSeries(bid_series,bidFormat); }		// add bid series
         if(ask_series!=null) { mySimpleXYPlot.addSeries(ask_series,askFormat); }
 
-        SharedPreferences sp = getSharedPreferences(SHARED_PREF_KEY, 0);
+        SharedPreferences sp = getSharedPreferences(constants.SHARED_PREF_KEY, 0);
 
         double Dmin, Dmax, Rmin, Rmax;
         //Calc Domain Minimum
@@ -608,24 +600,24 @@ public class MainActivity extends Activity {
       
         
         // set the domain and range
-        if(!sp.getBoolean(PREF_MIN_DOMAIN_AUTO, DEFAULT_MIN_DOMAIN_AUTO))	// Auto Off
+        if(!sp.getBoolean(constants.PREF_MIN_DOMAIN_AUTO, constants.DEFAULT_MIN_DOMAIN_AUTO))	// Auto Off
         {
-        	Dmin= sp.getFloat(PREF_MIN_DOMAIN, DEFAULT_MIN_DOMAIN);
+        	Dmin= sp.getFloat(constants.PREF_MIN_DOMAIN, constants.DEFAULT_MIN_DOMAIN);
         }
         
-        if(!sp.getBoolean(PREF_MAX_DOMAIN_AUTO, DEFAULT_MAX_DOMAIN_AUTO)) // Auto Off
+        if(!sp.getBoolean(constants.PREF_MAX_DOMAIN_AUTO, constants.DEFAULT_MAX_DOMAIN_AUTO)) // Auto Off
         {
-        	Dmax=sp.getFloat(PREF_MAX_DOMAIN, DEFAULT_MAX_DOMAIN);
+        	Dmax=sp.getFloat(constants.PREF_MAX_DOMAIN, constants.DEFAULT_MAX_DOMAIN);
         }
         
-        if(!sp.getBoolean(PREF_MIN_RANGE_AUTO, DEFAULT_MIN_RANGE_AUTO))	// Auto Off
+        if(!sp.getBoolean(constants.PREF_MIN_RANGE_AUTO, constants.DEFAULT_MIN_RANGE_AUTO))	// Auto Off
         {
-        	Rmin = sp.getFloat(PREF_MIN_RANGE, DEFAULT_MIN_RANGE);
+        	Rmin = sp.getFloat(constants.PREF_MIN_RANGE, constants.DEFAULT_MIN_RANGE);
         }
         
-        if(!sp.getBoolean(PREF_MAX_RANGE_AUTO, DEFAULT_MAX_RANGE_AUTO))	// Auto Off
+        if(!sp.getBoolean(constants.PREF_MAX_RANGE_AUTO, constants.DEFAULT_MAX_RANGE_AUTO))	// Auto Off
         {
-        	Rmax = sp.getFloat(PREF_MAX_RANGE, DEFAULT_MAX_RANGE);
+        	Rmax = sp.getFloat(constants.PREF_MAX_RANGE, constants.DEFAULT_MAX_RANGE);
         }
     
         if(Dmin < 0 ) { Dmin = 0; }
@@ -1304,7 +1296,6 @@ public class MainActivity extends Activity {
 			tv_status.setText("Downloading Orders...");
 			comm.getOrders(ticker);
 		}
-		
 	}
 
 	@Override
@@ -1322,11 +1313,16 @@ public class MainActivity extends Activity {
         
         //Selector
     	Spinner spn_nav = (Spinner) findViewById(R.id.main_spinner_selector);
-    	ArrayAdapter<?> adapter = ArrayAdapter.createFromResource(this, R.array.selector, android.R.layout.simple_spinner_item);
+    	ArrayAdapter<?> adapter = ArrayAdapter.createFromResource(this, R.array.selector_main, android.R.layout.simple_spinner_item);
     	adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
     	spn_nav.setAdapter(adapter);
     	spn_nav.setSelection(0);
     	spn_nav.setOnItemSelectedListener(new SpinnerListener());
+    	
+    	// Initialize starting security
+    	EditText et_ticker = (EditText) findViewById(R.id.main_editText_ticker);
+    	if(constants.SITE.equals("LTC")) { et_ticker.setText("LTC-GLOBAL"); }
+    	if(constants.SITE.equals("BTC")) { et_ticker.setText("BTC-TRADING-PT"); }
         
         // Lookup Button
         Button btn_lookup = (Button) findViewById(R.id.main_btn_lookup);
@@ -1334,8 +1330,8 @@ public class MainActivity extends Activity {
 				public void onClick(View v) {
 					EditText et_ticker = (EditText) findViewById(R.id.main_editText_ticker);
      				Spinner spn = (Spinner) findViewById(R.id.main_spinner_selector);
-     				
-					if(!et_ticker.getText().toString().equals("")) // make sure there's something
+	
+     				if(!et_ticker.getText().toString().equals("")) // make sure there's something
      				{
      					Query((String)spn.getSelectedItem(),et_ticker.getText().toString());
      				}
@@ -1374,25 +1370,36 @@ public class MainActivity extends Activity {
      				
 					if(!et_ticker.getText().toString().equals("")) // make sure there's something
      				{
-						Uri uriUrl = Uri.parse(URL_API_SECURITY+et_ticker.getText().toString());
+						Uri uriUrl = Uri.parse(constants.URL_API_SECURITY+et_ticker.getText().toString());
 					    Intent iBrowser = new Intent(Intent.ACTION_VIEW, uriUrl);
 					    startActivity(iBrowser);
      				}
 				}
      	});
      	
+     	// Portfolio Button
+     	// Launch the portfolio activity
+     	Button btn_portfolio = (Button) findViewById(R.id.main_btn_portfolio);
+     	btn_portfolio.setOnClickListener( new Button.OnClickListener() {
+				public void onClick(View v) {
+					Intent intent = new Intent(getApplicationContext(), PortfolioActivity.class);
+					startActivity(intent);
+				}
+     	});
+     	
+     	
      	// Insert admob ads if not the paid version
-     	if (PAID==false)
+     	if (constants.PAID==false)
      	{
      		
      		LinearLayout ll_admob = (LinearLayout) findViewById(R.id.main_ll_admob);
      		
-     		adView = new AdView(this, AdSize.BANNER, "a151af2cb1c365c");
+     		adView = new AdView(this, AdSize.BANNER, constants.API_ADMOB);
      		ll_admob.addView(adView);
      		
      		AdRequest adRequest = new AdRequest();
      		
-     		if (DEBUG_MODE)
+     		if (constants.DEBUG_MODE)
      		{
      			adRequest.addTestDevice(AdRequest.TEST_EMULATOR);               // Emulator
      			adRequest.addTestDevice("htc-evo-HT265S405632");                // Test Android Device

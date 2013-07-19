@@ -11,8 +11,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
-
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -23,7 +21,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -37,13 +34,14 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import android.widget.ListView;
-
+import com.raad287.ltcglobal.Constants;
 
 public class BrowseActivity extends Activity {
+	
+	Constants constants = new Constants();
 	
 	public class BrowseItem extends Object{
 		private String itemTicker;
@@ -166,7 +164,7 @@ public class BrowseActivity extends Activity {
         }
 }
 	
-	public static final String URL_API_TICKER = "http://www.litecoinglobal.com/api/ticker/";
+	
 	// take unsorted ticker string, return JSONObject
 		public JSONObject parseTickersJSON(String sTickers)
 		{
@@ -204,7 +202,7 @@ public class BrowseActivity extends Activity {
 			
 			HttpClient http_client = new DefaultHttpClient();   
 			StringBuilder sb = new StringBuilder();
-			HttpGet http_get = new HttpGet(URL_API_TICKER);
+			HttpGet http_get = new HttpGet(constants.URL_API_TICKER);
 			
 			try {
 				HttpResponse http_response=http_client.execute(http_get);
@@ -257,17 +255,17 @@ public class BrowseActivity extends Activity {
 		{
 			try {
 				String ticker_name = sorted_names[i];
-				Log.i("LG", "ticker_name:"+ticker_name);
+				//Log.i("LG", "ticker_name:"+ticker_name);
 				String ticker_latest = jTickers.getJSONObject(ticker_name).getString("latest");
-				Log.i("LG", "ticker_latest:"+ticker_latest);
+				//Log.i("LG", "ticker_latest:"+ticker_latest);
 				String ticker_24h_avg = jTickers.getJSONObject(ticker_name).getString("24h_avg");
-				Log.i("LG", "ticker_24h_avg:"+ticker_24h_avg);
+				//Log.i("LG", "ticker_24h_avg:"+ticker_24h_avg);
 				int triangle;
 				if(ticker_latest.split("@").length>1)
 				{
 				ticker_latest=ticker_latest.split("@")[1];
 				}
-				Log.i("LG", "ticker_latest after split:"+ticker_24h_avg);
+				//Log.i("LG", "ticker_latest after split:"+ticker_24h_avg);
 				
 				try {
 				// going up

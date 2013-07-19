@@ -1,5 +1,10 @@
 package com.raad287.ltcglobal;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -8,7 +13,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.Context;
 import android.text.Html;
 import android.util.Log;
 
@@ -18,7 +22,7 @@ public class LTGParser {
 	// parseTickersRE: raw string return from ticker, and format into JSON using trade timestamp as id
 		public JSONObject parseHistoryRE(String sHistory)
 		{ 
-			Log.i("LG" , "In parser");
+			Log.i("LG" , "LTGParser:parseHistoryRE:In parser");
 			JSONObject jHistory = new JSONObject();
 			String re1=".*?";	// Non-greedy match on filler
 			String re2="\\{.*?\\}";	// Uninteresting: cbraces
@@ -28,7 +32,7 @@ public class LTGParser {
 			Pattern p = Pattern.compile(re1+re2+re3+re4,Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 			Matcher m = p.matcher(sHistory);
 		    
-			Log.i("LG", "Parsing...");
+			Log.i("LG", "LTGParser:parseHistoryRE:Parsing...");
 			while (m.find())
 		    {
 		        String cbraces1=m.group(1);
@@ -40,7 +44,7 @@ public class LTGParser {
 					jHistory.put(timestamp, jTrade);	// use timestamp as trade id in jHistory
 					
 				} catch (JSONException e) { 	
-					Log.i("LG", "JSONException:"+e.getMessage()); 
+					Log.i("LG", "LTGParser:parseHistoryRE:JSONException:"+e.getMessage()); 
 					}
 		    }
 			
@@ -52,7 +56,7 @@ public class LTGParser {
 		
 		public String stripHTML(String s)
 		{
-			Log.i("LG", "stripHTML");
+			Log.i("LG", "LTGParser:stripHTML:stripHTML");
 			StringBuilder sb = new StringBuilder();
 			String sStart = "<";
 			String sEnd =">";
@@ -72,13 +76,13 @@ public class LTGParser {
 			int id2=0;
 			int id3=0;
 			id1=sPage.indexOf(key);
-			Log.i("LG","id1:"+Integer.toString(id1));
+			//Log.i("LG","id1:"+Integer.toString(id1));
 			id2=sPage.indexOf(start,id1); //start
 			
-			Log.i("LG","id2:"+Integer.toString(id2));
+			//Log.i("LG","id2:"+Integer.toString(id2));
 			id3=sPage.indexOf(end,id2); //end
 			
-			Log.i("LG","id3:"+Integer.toString(id3));
+			//Log.i("LG","id3:"+Integer.toString(id3));
 				
 			char[] buffer=new char[id3-(id2+start.length())];
 					
@@ -89,40 +93,62 @@ public class LTGParser {
 		
 		public JSONObject parseNotificationsHTML(String sPage)
 		{
-			Log.i("LG", "parseNotificationHTML");
+			Log.i("LG", "LTGParser:parseNotificationsHTML:parsing");
 			JSONObject jNotifications = new JSONObject();
-			int id_notification_start = sPage.indexOf("<div id=\"tab4\" class=\"tab_content\">");
-			int id_notification_end = sPage.indexOf("<div id=\"tab5\" class=\"tab_content\">");
-			String sNotifications= sPage.substring(id_notification_start, id_notification_end);
-			sNotifications = stripHTML(sNotifications);
+			int id_notification_start = sPage.indexOf("<div id=\"tab4\" class=\"tab_content\" >");
+			int id_notification_end = sPage.indexOf("<div id=\"tab5\" class=\"tab_content\" >");
+			//Log.i("LG", "LTGParser:parseNotificationsHTML:start="+id_notification_start+" end="+id_notification_end);
+			
+			String sNotifications= String.valueOf(Html.fromHtml(sPage.substring(id_notification_start, id_notification_end)));
+			
+			
+			//Log.i("LG", "LTGParser:parseNotificationHTML:sNotifications="+sNotifications);
+			
+			try {
+				jNotifications.put("string", sNotifications);
+			}catch (JSONException e) { Log.i("LG", "LTGParser:parseNotificationsHTML:Exception:"+ e.getMessage()); }
+			
+			return jNotifications;
+		}
+		
+		public JSONObject parseMotionsHTML(String sPage)
+		{
+			Log.i("LG", "LTGParser:parseMotionsHTML");
+			JSONObject jMotions = new JSONObject();
+			int id_notification_start = sPage.indexOf("<div id=\"tab5\" class=\"tab_content\" >");
+			int id_notification_end = sPage.indexOf("<div id=\"tab6\" class=\"tab_content\" >");
+			String sMotions= sPage.substring(id_notification_start, id_notification_end);
+			
+			
+			sMotions = stripHTML(sMotions);
 			
 			StringBuffer sb = new StringBuffer();
-
+		
 			//Filter out \r and \t from 
-			for (int j = 0; j < sNotifications.length(); j++) {
-				if ((sNotifications.charAt(j) != '\r') && (sNotifications.charAt(j) != '\t')) {
+			for (int j = 0; j < sMotions.length(); j++) {
+				if ((sMotions.charAt(j) != '\r') && (sMotions.charAt(j) != '\t')) {
 				   
 				  // Filter out &xx;	
-					if(j<sNotifications.length()-3) {
-					   if( (sNotifications.charAt(j)!='&') && (sNotifications.charAt(j+3)!=';') )
+					if(j<sMotions.length()-3) {
+					   if( (sMotions.charAt(j)!='&') && (sMotions.charAt(j+3)!=';') )
 					   {
-						   sb.append(sNotifications.charAt(j));
+						   sb.append(sMotions.charAt(j));
 					   }
 					   else {
 						   // skip over
 						   j=j+3;
 					   } 
 					}else 
-					{ sb.append(sNotifications.charAt(j)); }
+					{ sb.append(sMotions.charAt(j)); }
 		        }}
-			sNotifications = sb.toString();
+			sMotions = sb.toString();
 			
 			// Filter out leading newline's and whitespace
 			int marker=0;
-			for (int i=0; i<sNotifications.length(); i++)
+			for (int i=0; i<sMotions.length(); i++)
 			{
-				if(sNotifications.charAt(i)!=(' ') && sNotifications.charAt(i)!=('\r') 
-						&& sNotifications.charAt(i)!=('\r'))
+				if(sMotions.charAt(i)!=(' ') && sMotions.charAt(i)!=('\r') 
+						&& sMotions.charAt(i)!=('\r'))
 				{
 					marker=i;
 					break;
@@ -130,23 +156,23 @@ public class LTGParser {
 			}
 			if(marker>0)   // delete the whitespace if found
 			{
-				StringBuilder sb2 = new StringBuilder(sNotifications);
+				StringBuilder sb2 = new StringBuilder(sMotions);
 				sb2.delete(0, marker);
-				sNotifications=sb2.toString();
+				sMotions=sb2.toString();
 			}
 			
 			
-			//Log.i("LG", "Parsed Notifications: "+sNotifications);
+			//Log.i("LG", "Parsed Notifications: "+sMotions);
 			try {
-				jNotifications.put("string", sNotifications);
-			}catch (JSONException e) { Log.i("LG", e.getMessage()); }
+				jMotions.put("string", sMotions);
+			}catch (JSONException e) { Log.i("LG", "LTGParser:parseMotionsHTML:Exception:"+e.getMessage()); }
 			
-			return jNotifications;
+			return jMotions;
 		}
-		
+
 		public JSONObject parseDividendsHTML(String sPage)
 		{
-			Log.i("LG", "parseDividendsHTML");
+			Log.i("LG", "LTGParser:parseDividendsHTML");
 			JSONObject jDividends = new JSONObject();
 			
 			int id_notification_start = sPage.indexOf("<th colspan=\"5\" scope=\"col\">Dividends</th>");
@@ -201,69 +227,11 @@ public class LTGParser {
 			//Log.i("LG", "Parsed Dividends: "+sDividends);
 			try {
 				jDividends.put("string", sDividends);
-			}catch (JSONException e) { Log.i("LG", e.getMessage()); }
+			}catch (JSONException e) { Log.i("LG", "LTGParser:parseDividends:Exception:"+e.getMessage()); }
 			
 			return jDividends;
 		}
 		
-		
-		public JSONObject parseMotionsHTML(String sPage)
-		{
-			Log.i("LG", "parseMotionsHTML");
-			JSONObject jMotions = new JSONObject();
-			int id_notification_start = sPage.indexOf("<div id=\"tab5\" class=\"tab_content\">");
-			int id_notification_end = sPage.indexOf("<div id=\"tab6\" class=\"tab_content\">");
-			String sMotions= sPage.substring(id_notification_start, id_notification_end);
-			
-			sMotions = stripHTML(sMotions);
-			
-			StringBuffer sb = new StringBuffer();
-
-			//Filter out \r and \t from 
-			for (int j = 0; j < sMotions.length(); j++) {
-				if ((sMotions.charAt(j) != '\r') && (sMotions.charAt(j) != '\t')) {
-				   
-				  // Filter out &xx;	
-					if(j<sMotions.length()-3) {
-					   if( (sMotions.charAt(j)!='&') && (sMotions.charAt(j+3)!=';') )
-					   {
-						   sb.append(sMotions.charAt(j));
-					   }
-					   else {
-						   // skip over
-						   j=j+3;
-					   } 
-					}else 
-					{ sb.append(sMotions.charAt(j)); }
-		        }}
-			sMotions = sb.toString();
-			
-			// Filter out leading newline's and whitespace
-			int marker=0;
-			for (int i=0; i<sMotions.length(); i++)
-			{
-				if(sMotions.charAt(i)!=(' ') && sMotions.charAt(i)!=('\r') 
-						&& sMotions.charAt(i)!=('\r'))
-				{
-					marker=i;
-					break;
-				}
-			}
-			if(marker>0)   // delete the whitespace if found
-			{
-				StringBuilder sb2 = new StringBuilder(sMotions);
-				sb2.delete(0, marker);
-				sMotions=sb2.toString();
-			}
-			
-			
-			//Log.i("LG", "Parsed Notifications: "+sMotions);
-			try {
-				jMotions.put("string", sMotions);
-			}catch (JSONException e) { Log.i("LG", e.getMessage()); }
-			
-			return jMotions;
-		}
 		
 		public JSONObject parseSecurityHTML(String sPage)
 		{
@@ -289,7 +257,7 @@ public class LTGParser {
 				jContract.put("executive summary", parseSecurityLookup(sPage, "Summary</th>", "<pre>", "</pre>"));
 				jContract.put("financial management", parseSecurityLookup(sPage, "Financial Management</th>", "<pre>", "</pre>"));
 				
-			}catch (JSONException e) { Log.i("LG", e.getMessage()); }
+			}catch (JSONException e) { Log.i("LG", "LTGParser:parseSecurityHTML:Exception1:"+e.getMessage()); }
 
 			//Filter
 			for(int i=0; i<jContract.names().length(); i++)
@@ -298,7 +266,7 @@ public class LTGParser {
 				String line="";
 				try {
 					line = jContract.getString(jContract.names().getString(i));
-				} catch (JSONException e) { Log.i("LG", "JSONException:"+e.getMessage()); }
+				} catch (JSONException e) { Log.i("LG", "LTGParser:parseSecurityHTML:JSONException1:"+e.getMessage()); }
 				
 				StringBuffer sb = new StringBuffer();
 				//Filter out \r and \t from  strings in jContract
@@ -322,7 +290,7 @@ public class LTGParser {
 				try {
 					jContract.put(jContract.names().getString(i), line);
 				} catch (JSONException e) {
-					Log.i("LG", "JSONException:"+e.getMessage()); }	 }
+					Log.i("LG", "LTGParser:parseSecurityHTML:JSONException2:"+e.getMessage()); }	 }
 			
 			return jContract;
 		}
@@ -336,7 +304,7 @@ public class LTGParser {
 				jTicker = new JSONObject(sTickers);
 				
 			} catch (JSONException e) {
-				Log.i("LG", "JSONException:"+e.getMessage());
+				Log.i("LG", "LTGParser:parseTickersJSON:JSONException:"+e.getMessage());
 				return null;
 			}
 			
@@ -353,12 +321,12 @@ public class LTGParser {
 				jOrders = new JSONObject(sOrders);
 
 			} catch (JSONException e) { 
-				Log.i("LG", "JSONException:" + e.getMessage());
+				Log.i("LG", "LTGParser:parseOrdersJSON:JSONException4:" + e.getMessage());
 				return null;
 			}
 			
 			
-			Log.i("LG", "Get Ids");
+			Log.i("LG", "LTGParser:parseOrdersJSON:Get Ids");
 	     	JSONArray jIds = jOrders.names();
 	     	if(jIds==null)
 	     	{
@@ -373,15 +341,15 @@ public class LTGParser {
 	 		{
 	 			try {
 	 				sorted_ids[i]=jIds.getLong(i);
-	 			} catch (JSONException e) { Log.i("LG", "JSONException:"+e.getMessage()); }
+	 			} catch (JSONException e) { Log.i("LG", "LTGParser:parseOrdersJSON1:JSONException:"+e.getMessage()); }
 	 		}
 	 		
 	 		// Sort
-	 		Log.i("LG", "Sort");
+	 		//Log.i("LG", "Sort");
 	 		Arrays.sort(sorted_ids); 	// Ascending
 	 		
 	     	// Fill jBids and jAsks
-	     	Log.i("LG", "Filling jBids and jAsks");
+	     	//Log.i("LG", "Filling jBids and jAsks");
 	     	try 
 	     	{
 		     	for (int i=0; i<jIds.length(); i++)
@@ -401,14 +369,14 @@ public class LTGParser {
 		     		}
 		     		
 		     	}
-	     	} catch (JSONException e) { Log.i("LG", e.getMessage()); }
+	     	} catch (JSONException e) { Log.i("LG", "LTGParser:parseOrdersJSON2:JSONException:"+e.getMessage()); }
 	     	
 	     	jOrders=null;
 	     	try {
 	     		jOrders=new JSONObject();
 		     	jOrders.put("bids", jBids);
 		     	jOrders.put("asks", jAsks);
-	     	} catch (JSONException e) { Log.i("LG", e.getMessage()); return null; }
+	     	} catch (JSONException e) { Log.i("LG", "LTGParser:parseOrdersJSON3:JSONException:"+e.getMessage()); return null;}
 	     	
 	     	return jOrders;
 			
@@ -424,8 +392,7 @@ public class LTGParser {
 				jDividends = new JSONObject(sDividends);
 
 			} catch (JSONException e) { 
-				Log.i("LG", "parseDividendsJSON: JSONException:" + e.getMessage());
-				Log.i("LG", "parseDividendsJSON: sDividends: "+sDividends);
+				Log.i("LG", "LTGParser:parseDividendsJSON:JSONException:" + e.getMessage());
 				return null;
 			}
 					
@@ -433,6 +400,26 @@ public class LTGParser {
 			if(jIds==null) { return null; }
 			
 			return jDividends;
+		}
+		
+		// take unsorted json string, return json object
+		public JSONObject parsePortfolioJSON(String sDividends)
+		{
+			// parse orders from string
+			JSONObject jPortfolio = new JSONObject();
+			try
+			{
+				jPortfolio = new JSONObject(sDividends);
+
+			} catch (JSONException e) { 
+				Log.i("LG", "LTGParser:parsePortfolioJSON:JSONException:" + e.getMessage());
+				return null;
+			}
+							
+			JSONArray jIds = jPortfolio.names();
+			if(jIds==null) { return null; }
+					
+			return jPortfolio;
 		}
 		
 		public JSONObject parseContractJSON(String sDividends)
@@ -444,8 +431,7 @@ public class LTGParser {
 				jContract = new JSONObject(sDividends);
 
 			} catch (JSONException e) { 
-				Log.i("LG", "parseContractJSON: JSONException:" + e.getMessage());
-				Log.i("LG", "parseContractJSON: sDividends: "+sDividends);
+				Log.i("LG", "LTGParser:parseContractJSON:JSONException:" + e.getMessage());
 				return null;
 			}
 					
@@ -453,6 +439,243 @@ public class LTGParser {
 			if(jIds==null) { return null; }
 			
 			return jContract;
+		}
+		
+		public JSONObject parsePortfolioCSV(String sCSV)
+		{
+			Log.i("LG", "LTGParser:parsePortfolioCSV:Beginning Parsing");
+			//Log.i("LG","LTGParser:parsePortfolioCSV:sCSV:"+sCSV);
+			
+			
+			
+			JSONObject jPortfolio = new JSONObject();
+			//Log.i("LG", "LTGParser:parsePortfolioCSV:jPortfolio:"+jPortfolio.toString());
+			// convert String into InputStream
+			InputStream is = new ByteArrayInputStream(sCSV.getBytes());
+		 
+			// read it with BufferedReader
+			BufferedReader br = new BufferedReader(new InputStreamReader(is));
+			
+			try
+			{
+				String line;
+				int lines_read=0;
+				br.readLine(); // ignore first line
+				while( (line = br.readLine()) != null)
+				{
+					String rowData[] = line.split(",");
+					String ticker = rowData[0];
+					String quantity = rowData[1];
+					String last_change = rowData[2];
+					
+					JSONObject jTicker = new JSONObject();
+					jTicker.put("ticker", ticker);
+					jTicker.put("quantity", quantity);
+					jTicker.put("last_change", last_change);
+					
+					// sort values in jPortfolio by order they are read
+					jPortfolio.put(String.valueOf(lines_read), jTicker);
+					lines_read++;
+				}
+			} catch (IOException e) {
+				Log.i("LTG", "LTGParser:parsePortfolioCSV:IOException"+e.getMessage());
+				return null;
+			} catch (JSONException e) {
+				Log.i("LTG", "LTGParser:parsePortfolioCSV:JSONException"+e.getMessage());
+				return null;
+			} catch (Exception e) {
+				Log.i("LTG", "LTGParser:parsePortfolioCSV:Exception"+e.getMessage());
+			}
+			
+			return jPortfolio;
+		}
+		
+		public JSONObject parsePortfolioTradesCSV(String sCSV)
+		{
+			Log.i("LG", "LTGParser:parsePortfolioTradesCSV:Beginning Parsing");
+			JSONObject jPortfolioTrades = new JSONObject();
+			// convert String into InputStream
+			InputStream is = new ByteArrayInputStream(sCSV.getBytes());
+		 
+			// read it with BufferedReader
+			BufferedReader br = new BufferedReader(new InputStreamReader(is));
+			
+			try
+			{
+				String line;
+				int lines_read=0;
+				br.readLine(); // ignore first line
+				while( (line = br.readLine()) != null)
+				{
+					String rowData[] = line.split(",");
+					String ticker = rowData[0];
+					String operation = rowData[1];
+					String quantity = rowData[2];
+					String amount = rowData[3];
+					String timestamp = rowData[4];
+					
+					JSONObject jTicker = new JSONObject();
+					jTicker.put("ticker", ticker);
+					jTicker.put("operation", operation);
+					jTicker.put("quantity", quantity);
+					jTicker.put("amount", amount);
+					jTicker.put("timestamp", timestamp);
+					
+					// sort values in jPortfolio by order they are read
+					jPortfolioTrades.put(String.valueOf(lines_read), jTicker);
+					lines_read++;
+				}
+			} catch (IOException e) {
+				Log.i("LTG", "LTGParser:parsePortfolioTradesCSV:IOException"+e.getMessage());
+				return null;
+			} catch (JSONException e) {
+				Log.i("LTG", "LTGParser:parsePortfolioTradesCSV:JSONException"+e.getMessage());
+				return null;
+			} catch (Exception e) {
+				Log.i("LTG", "LTGParser:parsePortfolioTradesCSV:Exception"+e.getMessage());
+			}
+			
+			return jPortfolioTrades;
+		}
+		
+		public JSONObject parsePortfolioDividendsCSV(String sCSV)
+		{
+			Log.i("LG", "LTGParser:parsePortfolioDividendsCSV:Beginning Parsing");
+			JSONObject jPortfolioDividends = new JSONObject();
+			// convert String into InputStream
+			InputStream is = new ByteArrayInputStream(sCSV.getBytes());
+		 
+			// read it with BufferedReader
+			BufferedReader br = new BufferedReader(new InputStreamReader(is));
+			
+			try
+			{
+				String line;
+				int lines_read=0;
+				br.readLine(); // ignore first line
+				while( (line = br.readLine()) != null)
+				{
+					
+					String rowData[] = line.split(",");
+					String ticker = rowData[0];
+					String shares_paid = rowData[1];
+					String per_share = rowData[2];
+					String total_paid = rowData[3];
+					String timestamp = rowData[4];
+					
+					JSONObject jTicker = new JSONObject();
+					jTicker.put("ticker", ticker);
+					jTicker.put("shares_paid", shares_paid);
+					jTicker.put("per_share", per_share);
+					jTicker.put("total_paid", total_paid);
+					jTicker.put("timestamp", timestamp);
+					
+					// sort values in jPortfolio by order they are read
+					jPortfolioDividends.put(String.valueOf(lines_read), jTicker);
+					lines_read++;
+				}
+			} catch (IOException e) {
+				Log.i("LTG", "LTGParser:parsePortfolioDividendsCSV:IOException"+e.getMessage());
+				return null;
+			} catch (JSONException e) {
+				Log.i("LTG", "LTGParser:parsePortfolioDividendsCSV:JSONException"+e.getMessage());
+				return null;
+			} catch (Exception e) {
+				Log.i("LTG", "LTGParser:parsePortfolioDividendsCSV:Exception"+e.getMessage());
+			}
+			
+			return jPortfolioDividends;
+		}
+		
+		public JSONObject parsePortfolioDepositsCSV(String sCSV)
+		{
+			Log.i("LG", "LTGParser:parsePortfolioDepositsCSV:Beginning Parsing");
+			JSONObject jPortfolioDeposits = new JSONObject();
+			// convert String into InputStream
+			InputStream is = new ByteArrayInputStream(sCSV.getBytes());
+		 
+			// read it with BufferedReader
+			BufferedReader br = new BufferedReader(new InputStreamReader(is));
+			
+			try
+			{
+				String line;
+				int lines_read=0;
+				br.readLine(); // ignore first line
+				while( (line = br.readLine()) != null)
+				{
+					String rowData[] = line.split(",");
+					String description = rowData[0];
+					String transaction_id = rowData[1];
+					String amount = rowData[2];
+					String timestamp = rowData[3];
+					
+					JSONObject jTicker = new JSONObject();
+					jTicker.put("description", description);
+					jTicker.put("transaction_id", transaction_id);
+					jTicker.put("amount", amount);
+					jTicker.put("timestamp", timestamp);
+					
+					// sort values in jPortfolio by order they are read
+					jPortfolioDeposits.put(String.valueOf(lines_read), jTicker);
+					lines_read++;
+				}
+			} catch (IOException e) {
+				Log.i("LTG", "LTGParser:parsePortfolioDepositsCSV:IOException"+e.getMessage());
+				return null;
+			} catch (JSONException e) {
+				Log.i("LTG", "LTGParser:parsePortfolioDepositsCSV:JSONException"+e.getMessage());
+				return null;
+			} catch (Exception e) {
+				Log.i("LTG", "LTGParser:parsePortfolioDepositsCSV:Exception"+e.getMessage());
+			}
+			
+			return jPortfolioDeposits;
+		}
+		
+		public JSONObject parsePortfolioWithdrawlsCSV(String sCSV)
+		{
+			JSONObject jPortfolioWithdrawls = new JSONObject();
+			// convert String into InputStream
+			InputStream is = new ByteArrayInputStream(sCSV.getBytes());
+		 
+			// read it with BufferedReader
+			BufferedReader br = new BufferedReader(new InputStreamReader(is));
+			
+			try
+			{
+				String line;
+				int lines_read=0;
+				br.readLine(); // ignore first line
+				while( (line = br.readLine()) != null)
+				{
+					String rowData[] = line.split(",");
+					String description = rowData[0];
+					String transaction_id = rowData[1];
+					String amount = rowData[2];
+					String timestamp = rowData[3];
+					
+					JSONObject jTicker = new JSONObject();
+					jTicker.put("description", description);
+					jTicker.put("transaction_id", transaction_id);
+					jTicker.put("amount", amount);
+					jTicker.put("timestamp", timestamp);
+					
+					// sort values in jPortfolio by order they are read
+					jPortfolioWithdrawls.put(String.valueOf(lines_read), jTicker);
+					lines_read++;
+				}
+			} catch (IOException e) {
+				Log.i("LTG", "LTGParser:parsePortfolioWithdrawlCSV:IOException"+e.getMessage());
+				return null;
+			} catch (JSONException e) {
+				Log.i("LTG", "LTGParser:parsePortfolioWithdrawlCSV:JSONException"+e.getMessage());
+				return null;
+			} catch (Exception e) {
+				Log.i("LTG", "LTGParser:parsePortfolioWithdrawlCSV:Exception"+e.getMessage());
+			}
+			
+			return jPortfolioWithdrawls;
 		}
 	
 }
